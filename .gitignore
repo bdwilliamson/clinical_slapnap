@@ -3,3 +3,5 @@
 *.docx
 *.ppt
 *.pptx
+
+docker_output/*
