@@ -5,3 +5,8 @@
 *.pptx
 
 docker_output/*
+.Rproj.user
+
+.Rhistory
+*.Rproj
+dat/*

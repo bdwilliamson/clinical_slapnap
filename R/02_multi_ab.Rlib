@@ -1,0 +1,342 @@
+
+
+# ---------------------------------------------------------------------------- #
+# given an aligned sequence string, create an HXB2 map-like object
+# ---------------------------------------------------------------------------- #
+
+
+mk.hxb2.map <- function (hxb2.seq) {
+
+  # define an alphabet object for marking insertions
+  alphabet <- c ("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", 
+                 "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", 
+                 "y", "z")
+
+  # initialize our map object
+  map <- data.frame (posNum=1:nchar (hxb2.seq), 
+                     hxb2Pos=rep (NA, nchar (hxb2.seq)),
+                     hxb2aa=rep (NA, nchar (hxb2.seq)))
+
+  # loop through each position
+  hxb2.pos <- 0
+  gap.count <- 0
+  for (pos in 1:nchar (hxb2.seq)) {
+
+    # what is our residue at this position?
+    residue <- substr (hxb2.seq, pos, pos)
+    map[pos, 3] <- residue
+
+    # our residue is not a gap
+    if (substr (hxb2.seq, pos, pos) != "-") {
+      hxb2.pos <- hxb2.pos + 1
+      gap.count <- 0
+      map[pos, 2] <- hxb2.pos
+
+    # our "residue" is a gap
+    } else {
+      gap.count <- gap.count + 1
+      gap.letter <- ""
+
+      # gaps beyond number 26 "go around the horn"
+      if (gap.count > 26) {
+        gap.letter <- paste0 (alphabet[floor (gap.count / 26)], alphabet[gap.count - (floor (gap.count / 26) * 26)])
+
+      # otherwise the lettering of the gap position is straightforward
+      } else {
+        gap.letter <- alphabet[gap.count]
+      }
+      map[pos, 2] <- paste0 (hxb2.pos, gap.letter)
+    }
+  }
+
+  # finished; return our complete map object
+  return (map)
+}
+
+
+# ---------------------------------------------------------------------------- #
+# convert a data frame of residue information into vectorized binary indicators
+# ---------------------------------------------------------------------------- #
+
+
+aa.char.2.aa.binary <- function (seq, seqnames, map) {
+
+  # define our data alphabet, with natural-language descriptions
+  aa.chars <- c ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 
+                 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z', '-', 
+                 "*", '$', '?', '#')
+  aa.names <- c ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 
+                 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z', 'gap', 
+                 'stop_asterisk', 'stop_dollar', 'question', 'frameshift')
+
+  # initialize our results object
+  results <- matrix (NA, nrow=length (seq), ncol=nrow (map) * length (aa.names))
+  colnames (results) <- paste ("hxb2", rep (map[, 2], each=length (aa.names)), aa.names, "1mer", sep=".")
+
+  # loop through each sequence
+  for (seqindex in 1:length (seqnames)) {
+
+    # initialize the information required for this sequence
+    seqname.tmp <- seqnames[seqindex]    
+    seq.tmp <- as.vector (seq[[seqname.tmp]])
+    results.row <- NULL
+
+    # loop through each position
+    for (pos in 1:length (seq.tmp)) {
+
+      # our temporary results for this residue
+      results.tmp <- rep (0, length (aa.names))
+
+      # turn on the bit for our observed residue/code
+      results.tmp[aa.chars == seq.tmp[pos]] <- 1
+
+      # append to our master results
+      results.row <- append (results.row, results.tmp)
+    }
+
+    # we've compiled a row of results, so let's add it to the object
+    results[seqindex, ] <- results.row
+  }
+
+  # return our results
+  return (results)
+}
+
+
+# ---------------------------------------------------------------------------- #
+# convert country into geographic region
+# ---------------------------------------------------------------------------- #
+
+
+country.2.geo.reg <- function (country) {
+
+  # define our regions and the countries within them
+  asia <- c ("CN", "IN", "JP", "TH")
+  n.africa <- c ("CM", "CG", "CI", "CD", "ET", "KE", "RW", "SN", "TZ", "UG")
+  s.africa <- c ("BW", "MW", "ZA", "ZM")
+  euro <- c ("BE", "CH", "DE", "ES", "FR", "GB", "IT", "NL")
+  amer <- c ("BR", "DO", "HT", "PE", "TT", "US")
+
+  # initialize and create our univariate/text results variable
+  results.tmp <- rep (NA, length (country))  
+  results.tmp[country %in% asia] <- "Asia"
+  results.tmp[country %in% n.africa] <- "N.Africa"
+  results.tmp[country %in% s.africa] <- "S.Africa"
+  results.tmp[country %in% euro] <- "Europe"
+  results.tmp[country %in% amer] <- "Americas"
+
+  # split into binary indicators
+  results <- matrix (NA, nrow=length (country), ncol=length (levels (factor (results.tmp))))
+  colnames (results) <- levels (factor (results.tmp))
+  for (region.tmp in levels (factor (results.tmp))) {
+    results[, region.tmp] <- as.numeric (results.tmp == region.tmp)
+  }
+  colnames (results) <- paste0 ("geographic.region.of.origin.is.", colnames (results))
+
+  # we're done, let's wrap it up
+  return (results)
+}
+
+
+# ---------------------------------------------------------------------------- #
+# bin our subtype by major subtypes and "Other"
+# ---------------------------------------------------------------------------- #
+
+
+bin.subtype <- function (subtype) {
+
+  # define our subtype bins
+  subtype.bins <- c ("01_AE", "02_AG", "07_BC", "A1", "B", "C", "D")
+
+  # initialize our results object
+  results <- matrix (NA, nrow=length (subtype), ncol=length (subtype.bins) + 1)
+  colnames (results) <- c (subtype.bins, "Other")
+  for (subtype.bin in subtype.bins) {
+    results[, subtype.bin] <- as.numeric (subtype == subtype.bin)
+  }
+  colnames (results) <- paste0 ("subtype.is.", colnames (results))
+
+  # bin as "Other" if necessary
+  results[, ncol (results)] <- as.numeric (rowSums (results, na.rm=T) == 0)
+
+  # take me home, country road
+  return (results)
+}
+
+
+# ---------------------------------------------------------------------------- #
+# calculate the geometric mean
+# ---------------------------------------------------------------------------- #
+
+
+geometric.mean <- function (x, na.rm=TRUE) {
+  return (exp (sum (log (x[x > 0]), na.rm=na.rm) / length (x)))
+}
+
+
+# ---------------------------------------------------------------------------- #
+# given a vector of IC50/IC80 readouts, impute the censored cases and 
+# calculate the geometric mean
+# ---------------------------------------------------------------------------- #
+
+
+merge.readouts <- function (readouts) {
+
+  # remove all empty values
+  readouts <- readouts[readouts != ""]
+
+  # create our new readouts, imputing when necessary
+  readouts.new <- rep (NA, length (na.omit (readouts)))
+  readouts.new[!(substr (readouts, 1, 1) %in% c (">", "<"))] <- as.numeric (as.character (readouts[!(substr (readouts, 1, 1) %in% c (">", "<"))]))
+  readouts.new[substr (readouts, 1, 1) == ">"] <- (as.numeric (substr (readouts[substr (readouts, 1, 1) == ">"], 2, nchar (as.character (readouts[substr (readouts, 1, 1) == ">"])))) * 2)
+  readouts.new[substr (readouts, 1, 1) == "<"] <- (as.numeric (substr (readouts[substr (readouts, 1, 1) == "<"], 2, nchar (as.character (readouts[substr (readouts, 1, 1) == "<"])))) / 2)
+
+  # return the geometric mean
+  return (geometric.mean (readouts.new))
+}
+
+
+# ---------------------------------------------------------------------------- #
+# perform the Wagh et al. additive method
+# ---------------------------------------------------------------------------- #
+
+
+wagh.additive.method <- function (x) {
+  return (1 / sum (1 / x))
+}
+
+
+# ---------------------------------------------------------------------------- #
+# given a vector of sequence information, count the number of potential 
+# N-linked glycosolation sites, using the canonical [N][!P][S|T] motif
+# ---------------------------------------------------------------------------- #
+
+
+count.sequons <- function (seq) {
+
+  # remove gaps
+  seq.tmp <- seq[seq != "-"]
+
+  # initialize our results variable
+  sequons.count <- 0
+
+  # loop through the positions in the sequence ...
+  for (index in 1:(length (seq.tmp) - 2)) {
+
+    # looking for and counting PNGSes as we go
+    if (seq.tmp[index] == "N" & seq.tmp[index + 1] != "P" & seq.tmp[index + 2] %in% c ("S", "T")) {
+      sequons.count <- sequons.count + 1
+    }
+  }
+
+  # that's it, return the result
+  return (sequons.count)
+}
+
+
+# ---------------------------------------------------------------------------- #
+# given a data frame of sequence features and an HXB2 map, identify the 
+# residues that serve as a potential N-linked glycosolation site; PNGSes are
+# identified using the canonical [N][!P][S|T] motif
+# ---------------------------------------------------------------------------- #
+
+
+aa.char.2.sequon.indicators <- function (seq, seqnames, map) {
+
+  # initialize our results object
+  results <- matrix (NA, nrow=length (seqnames), ncol=nrow (map))
+  colnames (results) <- paste0 ("hxb2.", map[, 2], ".sequon_actual.1mer")
+
+  # loop through each sequence
+  for (seqindex in 1:length (seqnames)) {
+
+    # initialize the information required for this sequence
+    seqname.tmp <- seqnames[seqindex]    
+    seq.tmp <- as.vector (seq[[seqname.tmp]])
+    results.row <- rep (0, length (seq.tmp))
+
+    # loop through each position and indicate of a PNGS is at that site
+    for (posindex in 1:(length (seq.tmp) - 2)) {
+      if (seq.tmp[posindex] == "N" & seq.tmp[posindex + 1] != "P" & seq.tmp[posindex + 2] %in% c ("S", "T")) {
+        results.row[posindex] <- 1
+      }
+    }
+
+    # we've compiled a row of results, so let's add it to the object
+    results[seqindex, ] <- results.row
+  }
+
+  # return our results
+  return (results)
+}
+
+
+# ---------------------------------------------------------------------------- #
+# given a data frame of sequence features and an HXB2 map, determine our 
+# sequence's viral geometry
+# ---------------------------------------------------------------------------- #
+
+
+aa.char.2.vir.geom <- function (seq, seqnames, map) {
+
+  # initialize our results object
+  results.names <- c ("length.env", "length.gp120", "length.v2", "length.v3",
+                      "length.v5", "num.sequons.env", "num.sequons.gp120", 
+                      "num.sequons.v2", "num.sequons.v3", "num.sequons.v5",
+                      "num.cysteine.env", "num.cysteine.gp120", "num.cysteine.v2",
+                      "num.cysteine.v3", "num.cysteine.v5")
+  results <- matrix (NA, nrow=length (seqnames), ncol=length (results.names))
+
+  # loop through each sequence
+  for (seqindex in 1:length (seqnames)) {
+
+    # initialize the information required for this sequence
+    seqname.tmp <- seqnames[seqindex]    
+    seq.tmp <- as.vector (seq[[seqname.tmp]])
+
+    # (1) length of gp120, Env, V2, V3, V5
+    tmp.length.env <- sum (seq.tmp != "-")
+    tmp.length.gp120 <- sum (seq.tmp[(map[map[, 2] == 31, 1]):(map[map[, 2] == 511, 1])] != "-")
+    tmp.length.v2 <- sum (seq.tmp[(map[map[, 2] == 157, 1]):(map[map[, 2] == 196, 1])] != "-")
+    tmp.length.v3 <- sum (seq.tmp[(map[map[, 2] == 296, 1]):(map[map[, 2] == 331, 1])] != "-")
+    tmp.length.v5 <- sum (seq.tmp[(map[map[, 2] == 460, 1]):(map[map[, 2] == 469, 1])] != "-")
+
+    # (2) # of PNGSes in gp120, Env, V2, V3, V5
+    tmp.sequons.env <- count.sequons (seq.tmp)
+    tmp.sequons.gp120 <- count.sequons (seq.tmp[(map[map[, 2] == 31, 1]):(map[map[, 2] == 511, 1])])
+    tmp.sequons.v2 <- count.sequons (seq.tmp[(map[map[, 2] == 157, 1]):(map[map[, 2] == 196, 1])])
+    tmp.sequons.v3 <- count.sequons (seq.tmp[(map[map[, 2] == 296, 1]):(map[map[, 2] == 331, 1])])
+    tmp.sequons.v5 <- count.sequons (seq.tmp[(map[map[, 2] == 460, 1]):(map[map[, 2] == 469, 1])])
+
+    # (3) # of cysteines ("C") in gp120, Env, V2, V3, V5
+    tmp.cysteines.env <- sum (seq.tmp == "C")
+    tmp.cysteines.gp120 <- sum (seq.tmp[(map[map[, 2] == 31, 1]):(map[map[, 2] == 511, 1])] == "C")
+    tmp.cysteines.v2 <- sum (seq.tmp[(map[map[, 2] == 157, 1]):(map[map[, 2] == 196, 1])] == "C")
+    tmp.cysteines.v3 <- sum (seq.tmp[(map[map[, 2] == 296, 1]):(map[map[, 2] == 331, 1])] == "C")
+    tmp.cysteines.v5 <- sum (seq.tmp[(map[map[, 2] == 460, 1]):(map[map[, 2] == 469, 1])] == "C")
+
+    # we've compiled a row of results, so let's add it to the object
+    results[seqindex, ] <- c (tmp.length.env, tmp.length.gp120, tmp.length.v2,
+                              tmp.length.v3, tmp.length.v5, tmp.sequons.env, 
+                              tmp.sequons.gp120, tmp.sequons.v2, tmp.sequons.v3, 
+                              tmp.sequons.v5, tmp.cysteines.env, tmp.cysteines.gp120,
+                              tmp.cysteines.v2, tmp.cysteines.v3, tmp.cysteines.v5)
+  }
+
+  # return our results
+  results <- as.data.frame (results)
+  names (results) <- results.names
+  return (results)
+}
+
+
+# ---------------------------------------------------------------------------- #
+#                                    - 30 -
+# ---------------------------------------------------------------------------- #
+
+# test mode:
+#seq <- seqs.selected
+#seqnames <- seqname.selected.full
+#map <- hxb2.map
+
+
