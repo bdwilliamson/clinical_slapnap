@@ -5,6 +5,9 @@
 *.pptx
 
 docker_output/*
+!docker_output/.gitkeep
+R_output/*
+!R_output/.gitkeep
 .Rproj.user
 
 .Rhistory
