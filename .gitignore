@@ -9,7 +9,16 @@ docker_output/*
 R_output/*
 !R_output/.gitkeep
 .Rproj.user
+sandbox/*
 
 .Rhistory
 *.Rproj
 dat/*
+
+# latex stuff
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.pdf
+*.synctex.gz

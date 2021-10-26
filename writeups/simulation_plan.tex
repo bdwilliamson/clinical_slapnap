@@ -1,0 +1,102 @@
+\documentclass[10pt]{article}
+\renewcommand{\baselinestretch}{1}
+
+\usepackage{lscape,verbatim}
+\usepackage{graphics,amsmath,pstricks}
+\usepackage{amssymb,enumerate}
+\usepackage{amsbsy,amsmath,amsthm,amsfonts, amssymb}
+\usepackage{graphicx, rotate, array}
+\usepackage{geometry,multirow}
+\usepackage{float}
+%\usepackage{hyperref}
+\usepackage{natbib}
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+\usepackage{mathrsfs}
+\usepackage{algpseudocode} % algs
+\usepackage{algorithm} % algs
+\algrenewcommand\algorithmicindent{0.4em}
+\usepackage[english]{isodate} % nice date
+\cleanlookdateon
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+
+
+%\renewcommand{\familydefault}{cmss}
+\textwidth=6.65in \textheight=9.5in
+\parskip=.025in
+\parindent=0.1in
+\oddsidemargin=-0.1in \evensidemargin=-.1in \headheight=-.5in
+\footskip=0.6in \DeclareMathOperator*{\argmax}{argmax}
+\DeclareMathOperator*{\argmin}{argmin}
+\DeclareMathOperator*{\logit}{logit}
+
+\author{Brian Williamson}
+\title{Simulation plan: clinical SLAPNAP manuscript}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+This document describes the planned simulations for the clinical SLAPNAP manuscript. The simulations address the following goals:
+\begin{enumerate}
+    \item determine if using external data (i.e., Env sequences) results in variance reduction for estimating R-squared and AUC; and
+    \item determine if using SLAPNAP can improve sieve analysis.
+\end{enumerate}
+In the next section, I describe my proposed approach to answering these two questions using simulations.
+
+\section{Simulation plan}
+\subsection{Determining the variance reduction from including auxiliary response variables}
+\subsubsection{Continuous outcome}
+The simplest case for examining variance reductions is in the case of a continuous outcome (quantitative IC$_{80}$). The results from SLAPNAP runs for each bnAb in Table 1 of the SLAPNAP clinical manuscript are presented in the second column of Table~\ref{tab:perf}.
+
+For this simulation, for each bnAb in Table~\ref{tab:perf}, we denote by $X$ the $\log_{10}$ PAR score and by $Y$ the $\log_{10}$ IC$_{80}$ readout. We suppose that $(X,Y) \sim N(\mu, \Sigma)$, where $\mu = (\mu_1, \mu_2)$ is a mean vector and $\Sigma = \begin{bmatrix} \Sigma_{11} & \Sigma_{12} \\ \Sigma_{21} & \Sigma_22 \end{bmatrix}$ is a covariance matrix. For simplicity, we set $\mu_1 = \mu_2 = \mu^*$, with $\mu^*$ the mean IC$_{80}$ value in the CATNAP data for the specified bnAb (or bnAb regimen), and set $\Sigma_{11} = \Sigma_{22} = \Sigma^*$, with $\Sigma^*$ the variance of IC$_{80}$ in the CATNAP data for the specified bnAb (or bnAb regimen). Under this model, we can write
+\begin{align*}
+    R^2 =& \ 1 - \frac{var(X)}{var(Y)} \\
+    =& \ 1 - \frac{\Sigma_{12}^2\Sigma_{22}^{-1}}{\Sigma_{11}} \\
+    =& \ 1 - \Sigma_{12}^2.
+\end{align*}
+We can then generate data according to $\Sigma_{12}^2 = (1 - R^2)$, using the point estimates of CV-$R^2$ provided in Table~\ref{tab:perf}.
+
+For each bnAb, we generate 1000 random datasets according to the following specification. We generate $n = 500$ IC$_{80}$ values and corresponding Env sequences from a $N(\mu, \Sigma)$ distribution, resulting in $X$ and $Y$. We truncate $Y$ at 1 (equivalent to an IC$_{80}$ of 10), since high values  We then generate $(1 + \epsilon)n$ additional Env sequences from this same distribution without IC$_{80}$ measured, where $\epsilon \in \{0.5, 1, 2\}$; we call these data $W$. The final dataset is then $(W, X, Y)$. We will generate 3000 replications, 1000 for each value of $\epsilon$.
+
+For each random dataset, we estimate the mean of $Y$ using $(X,Y)$ and using $(W,X,Y)$. We then compute the Monte-Carlo variance of the estimated means over the 1000 replications, and estimate the relative efficiency of using $W$ by taking the ratio of the Monte-Carlo variance ignoring $W$ to the Monte-Carlo variance using $W$.
+
+\begin{table}
+    \centering
+    \caption{Prediction performance for each broadly neutralizing antibody (bnAb) or bnAb regimen from Table 1 of the SLAPNAP clinical manuscript. For each SLAPNAP run, performance is measured using cross-validated R-squared (CV-$R^2$) for continuous IC$_{80}$ and using cross-validated AUC (CV-AUC) for (estimated) sensitivity and multiple sensitivity (where applicable).}
+    \begin{tabular}{l|ccc}
+        & \multicolumn{3}{c}{Prediction performance} \\
+        bnAb (or bnAb regimen) & IC$_{80}$ & (Estimated) Sensitivity & Multiple Sensitivity \\
+        \hline
+        VRC01 & 0.345 & 0.744 & -- \\
+        PGT121 & 0.571 & 0.85 & -- \\
+        VRC07-523-LS & 0.193 & 0.728 & --\\
+        VRC07-523-LS + 10-1074 & 0.319 & 0.783 & 0.784 \\
+        VRC07-523-LS + PGT121 & 0.316 & 0.768 & 0.781 \\
+        VRC07-523-LS + PGDM1400 & 0.255 & 0.638 & 0.669 \\
+        VRC07-523-LS + PGT121 + PGDM1400 & 0.181 & 0.73 & 0.708 \\
+        VRC01/PGDM1400/10e8v4 & 0.254 & 0.81 & --
+    \end{tabular}
+    \label{tab:perf}
+\end{table}
+
+\subsubsection{Binary outcome}
+
+We use a similar approach for binary outcomes to the approach outlined in the previous section. We now denote by $Y$ the indicator that IC$_{80} < 1$, and denote by $X$ the $\log_{10}$ PAR score. We suppose that $Y \sim Bern(p)$, where $p$ is the sample proportion for each bnAb in the CATNAP data, and that $X \mid Y = y \sim N(\mu_y, \sigma^2_y)$. Based on this specification, we can write (for two iid samples $(X_1, Y_1)$ and $(X_2, Y_2)$)
+\begin{align*}
+    AUC =& P(X_1 < X_2 \mid Y_1 = 0, Y_2 = 1) \\
+    =& \ P(X_2 - X_1 > 0 \mid Y_1 = 0, Y_2 = 1);
+\end{align*}
+setting $Z = X_2 - X_1$, we see that $Z$ has a normal distribution with mean $\mu_1 - \mu_0$ and variance $\sigma^2_0 + \sigma^2_1$. Thus,
+\begin{align*}
+    AUC =& \ P(\frac{Z - (\mu_1 - \mu_0)}{\sqrt{\sigma^2_0 + \sigma^2_1}} > \frac{- (\mu_1 - \mu_0)}{\sqrt{\sigma^2_0 + \sigma^2_1}}) \\
+    \Rightarrow \frac{(\mu_1 - \mu_0)}{\sqrt{\sigma^2_1 + \sigma^2_0}} =& \ (-1)\Phi^{-1}(1 - AUC),
+\end{align*}
+where $\Phi$ denotes the standard normal cdf. Thus, setting $\sigma^2_1 = \sigma^2_0 = 0.005$ and $\mu_0 = -0.32$ (corresponding to a mean PAR score of 0.47), we can generate $n$ iid copies of $X$ and $Y$, and generate $n(1 + \epsilon)$ iid copies of $W$ (the additional Env sequences).
+
+For each random dataset, we estimate the mean of $Y$ using $(X,Y)$ and using $(W,X,Y)$; these estimate the probability that IC$_{80} < 1$. We then compute the Monte-Carlo variance of the estimated means over the 1000 replications, and estimate the relative efficiency of using $W$ by taking the ratio of the Monte-Carlo variance ignoring $W$ to the Monte-Carlo variance using $W$.
+
+\subsection{Sieve analysis}
+\end{document}
