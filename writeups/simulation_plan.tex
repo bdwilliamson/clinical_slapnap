@@ -47,21 +47,25 @@ This document describes the planned simulations for the clinical SLAPNAP manuscr
 In the next section, I describe my proposed approach to answering these two questions using simulations.
 
 \section{Simulation plan}
-\subsection{Determining the variance reduction from including auxiliary response variables}
+\subsection{Using auxiliary response variables reduces estimation variance}
 \subsubsection{Continuous outcome}
-The simplest case for examining variance reductions is in the case of a continuous outcome (quantitative IC$_{80}$). The results from SLAPNAP runs for each bnAb in Table 1 of the SLAPNAP clinical manuscript are presented in the second column of Table~\ref{tab:perf}.
+The simplest case for examining variance reductions is in the case of a continuous outcome (quantitative IC$_{80}$). The results from SLAPNAP runs predicting IC$_{80}$ for each bnAb in Table 1 of the SLAPNAP clinical manuscript are presented in the second column of Table~\ref{tab:perf}.
 
-For this simulation, for each bnAb in Table~\ref{tab:perf}, we denote by $X$ the $\log_{10}$ PAR score and by $Y$ the $\log_{10}$ IC$_{80}$ readout. We suppose that $(X,Y) \sim N(\mu, \Sigma)$, where $\mu = (\mu_1, \mu_2)$ is a mean vector and $\Sigma = \begin{bmatrix} \Sigma_{11} & \Sigma_{12} \\ \Sigma_{21} & \Sigma_22 \end{bmatrix}$ is a covariance matrix. For simplicity, we set $\mu_1 = \mu_2 = \mu^*$, with $\mu^*$ the mean IC$_{80}$ value in the CATNAP data for the specified bnAb (or bnAb regimen), and set $\Sigma_{11} = \Sigma_{22} = \Sigma^*$, with $\Sigma^*$ the variance of IC$_{80}$ in the CATNAP data for the specified bnAb (or bnAb regimen). Under this model, we can write
+For this simulation, for each bnAb in Table~\ref{tab:perf}, we denote by $X$ the $\log_{10}$ PAR score obtained from SLAPNAP and by $Y$ the $\log_{10}$ IC$_{80}$ readout. We suppose that $(X,Y) \sim N(\mu, \Sigma)$, where $\mu = (\mu_1, \mu_2)$ is a mean vector and $\Sigma = \begin{bmatrix} \Sigma_{11} & \Sigma_{12} \\ \Sigma_{21} & \Sigma_{22} \end{bmatrix}$ is a covariance matrix. For simplicity, we set $\mu_1 = \mu_2 = \mu^*$, with $\mu^*$ the mean IC$_{80}$ value in the CATNAP data for the specified bnAb (or bnAb regimen), and set $\Sigma_{11} = \Sigma_{22} = \Sigma^*$, with $\Sigma^*$ the variance of IC$_{80}$ in the CATNAP data for the specified bnAb (or bnAb regimen). Under this model, we can write
 \begin{align*}
     R^2 =& \ 1 - \frac{var(X)}{var(Y)} \\
-    =& \ 1 - \frac{\Sigma_{12}^2\Sigma_{22}^{-1}}{\Sigma_{11}} \\
-    =& \ 1 - \Sigma_{12}^2.
+    =& \ 1 - \frac{\Sigma_{12}^2\Sigma_{22}^{-1}}{\Sigma_{11}}.
 \end{align*}
-We can then generate data according to $\Sigma_{12}^2 = (1 - R^2)$, using the point estimates of CV-$R^2$ provided in Table~\ref{tab:perf}.
+We can then generate data according to $\Sigma_{12}^2 = (1 - R^2)\Sigma_{22}\Sigma_{11}$, using the point estimates of CV-$R^2$ provided in Table~\ref{tab:perf} (and under the simplifying assumption made above, $\Sigma_{11} = \Sigma_{22} = \Sigma^*$).
 
-For each bnAb, we generate 1000 random datasets according to the following specification. We generate $n = 500$ IC$_{80}$ values and corresponding Env sequences from a $N(\mu, \Sigma)$ distribution, resulting in $X$ and $Y$. We truncate $Y$ at 1 (equivalent to an IC$_{80}$ of 10), since high values  We then generate $(1 + \epsilon)n$ additional Env sequences from this same distribution without IC$_{80}$ measured, where $\epsilon \in \{0.5, 1, 2\}$; we call these data $W$. The final dataset is then $(W, X, Y)$. We will generate 3000 replications, 1000 for each value of $\epsilon$.
+For each bnAb, we generate 1000 random datasets according to the following specification. We generate $n = 1000$ IC$_{80}$ values and corresponding Env sequences from a $N(\mu, \Sigma)$ distribution, resulting in $X$ and $Y$. We truncate $Y$ at 1 (equivalent to an IC$_{80}$ of 10), since high values of IC$_{80}$ are difficult to quantify. We then generate $(1 + \epsilon)n$ additional Env sequences from this same distribution without IC$_{80}$ measured, where $\epsilon \in \{0.5, 1, 2\}$; we call these data $W$. The final dataset is then $(W, X, Y)$. We will generate 3000 total replications, 1000 for each value of $\epsilon$.
 
-For each random dataset, we estimate the mean of $Y$ using $(X,Y)$ and using $(W,X,Y)$. We then compute the Monte-Carlo variance of the estimated means over the 1000 replications, and estimate the relative efficiency of using $W$ by taking the ratio of the Monte-Carlo variance ignoring $W$ to the Monte-Carlo variance using $W$.
+For each random dataset, we estimate the mean of $Y$ using $(X,Y)$ and using $(W,X,Y)$. In other words, setting $U = (X,Y)$ (yielding $2n$ observations of $U$) and $V = (W,X,Y)$ (yielding $n(3 + \epsilon)$ observations of $V$), we compute
+\begin{align*}
+    \overline{Y}_1 =& \ \frac{1}{2n}\sum_{i=1}^{2n}U_i \\
+    \overline{Y}_2 =& \ \frac{1}{n(3 + \epsilon)}\sum_{i=1}^{n(3 + \epsilon)}V_i;\\
+\end{align*}
+since both $X_i$ and $W_i$ are predictions of $Y_i$, each provides us with information about the outcome. We then compute the Monte-Carlo variance of the estimated means $\overline{Y}_1$ and $\overline{Y}_2$ over the 1000 replications, and estimate the relative efficiency of using $W$ by taking the ratio of the Monte-Carlo variance ignoring $W$ to the Monte-Carlo variance using $W$.
 
 \begin{table}
     \centering
@@ -91,12 +95,33 @@ We use a similar approach for binary outcomes to the approach outlined in the pr
 \end{align*}
 setting $Z = X_2 - X_1$, we see that $Z$ has a normal distribution with mean $\mu_1 - \mu_0$ and variance $\sigma^2_0 + \sigma^2_1$. Thus,
 \begin{align*}
-    AUC =& \ P(\frac{Z - (\mu_1 - \mu_0)}{\sqrt{\sigma^2_0 + \sigma^2_1}} > \frac{- (\mu_1 - \mu_0)}{\sqrt{\sigma^2_0 + \sigma^2_1}}) \\
+    AUC =& \ P\left(\frac{Z - (\mu_1 - \mu_0)}{\sqrt{\sigma^2_0 + \sigma^2_1}} > \frac{- (\mu_1 - \mu_0)}{\sqrt{\sigma^2_0 + \sigma^2_1}}\right) \\
     \Rightarrow \frac{(\mu_1 - \mu_0)}{\sqrt{\sigma^2_1 + \sigma^2_0}} =& \ (-1)\Phi^{-1}(1 - AUC),
 \end{align*}
-where $\Phi$ denotes the standard normal cdf. Thus, setting $\sigma^2_1 = \sigma^2_0 = 0.005$ and $\mu_0 = -0.32$ (corresponding to a mean PAR score of 0.47), we can generate $n$ iid copies of $X$ and $Y$, and generate $n(1 + \epsilon)$ iid copies of $W$ (the additional Env sequences).
+where $\Phi$ denotes the standard normal cdf. Thus, setting $\sigma^2_1 = \sigma^2_0 = 0.005$ and $\mu_0 = -0.32$ (corresponding to a mean PAR score of 0.47 among those with $Y = 0$), we can generate $n$ iid copies of $X$ and $Y$, and generate $n(1 + \epsilon)$ iid copies of $W$ (the additional Env sequences).
 
-For each random dataset, we estimate the mean of $Y$ using $(X,Y)$ and using $(W,X,Y)$; these estimate the probability that IC$_{80} < 1$. We then compute the Monte-Carlo variance of the estimated means over the 1000 replications, and estimate the relative efficiency of using $W$ by taking the ratio of the Monte-Carlo variance ignoring $W$ to the Monte-Carlo variance using $W$.
+For each random dataset, we again create vectors $U$ and $V$, where now $U = (I(10 ^ X > 0.5), Y)$ and $V = (I(10 ^ X > 0.5), I(10^W > 0.5), Y)$. Then we compute
+\begin{align*}
+    \overline{P}_1 =& \ \frac{1}{2n}\sum_{i=1}^{2n} U_i \text{ and } \\
+    \overline{P}_2 =& \ \frac{1}{n(3+\epsilon)}\sum_{i=1}^{n(3+\epsilon)}V_i;
+\end{align*}
+these estimate the probability that IC$_{80} < 1$. We then compute the Monte-Carlo variance of the estimated means over the 1000 replications, and estimate the relative efficiency of using $W$ by taking the ratio of the Monte-Carlo variance ignoring $W$ to the Monte-Carlo variance using $W$.
 
 \subsection{Sieve analysis}
+
+The goal of this simulation is to see if SLAPNAP improves sieve analysis; in particular, we want to see if using SLAPNAP results in improved power for detecting sieve effects. For simplicity, we will focus on VRC01 only for this simulation.
+
+We will use Cox modeling (Lunn and McNeil, 1995) to estimate differential prevention efficacy by `putative resistant' genotype versus `other genotype' for each of the 26 positions in gp120 identified as important for the AMP sieve analysis with enough variability in the AMP data, defined by at least 4 primary endpoint cases having a sequence with a minority residu at the given position (harmonized with the AMP sieve analysis). We denote the sites that pass the variability threshold by $\{H_i\}_{i=1}^I$, where $I \leq 26$.
+
+Next, we define the alternative hypotheses for sieve effects at each site. We assume an overall prevention efficacy of 18\% (as identified in AMP), i.e., set $PE(\text{overall}) = 0.18$. We also assume $PE(\text{putative resistant genotype at site } H_i) = 0$ for all $i$. Then for each site $H_1,\ldots,H_I$, we set
+\begin{align*}
+    PE(\text{overall}) = \gamma_i PE(\text{putative resistant genotype at site } H_i) + (1 - \gamma_i)PE(\text{other genotype at site } H_i),
+\end{align*}
+where $\gamma_i$ is the fraction of placebo-arm AMP viruses that have the putative resistant genotype. This allows us to determine the alternative hypothesis for each site. For all other gp120 sites, we assume the null hypothesis $PE(\text{putative resistant genotype at site } H_i) = PE(\text{other genotype at site } H_i)$. We compute each $\gamma$ using the AMP data.
+
+For each of 1000 Monte-Carlo replications, we generate data for each site in gp120 and apply a standard Lunn and McNeil test for differential PE at each gp120 site with two-sided level 0.05; we define a detection as the resulting p-value from this test being less than the multiplicity-adjusted threshold of 0.05 / (number of sites in gp120 with enough variability). We compute the power as the Monte-Carlo average number of true detections.
+
+We also perform a separate 1000 Monte-Carlo replications, generating data for each site in gp120 and apply a standard Lunn and McNeil test for differential PE at each of the important high-variability sites with two-sided level 0.05; we define a detection as the resulting p-value from this test being less than the multiplicity-adjusted threshold of 0.05 / 26. We compute the power as the Monte-Carlo average number of true detections.
+
+Comparing the power of these two approaches (analyze all of gp120, analyze only the important high-variability sites) will provide a useful description of how much SLAPNAP aids in sieve analysis.
 \end{document}

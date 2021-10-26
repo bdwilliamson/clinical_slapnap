@@ -6,7 +6,7 @@
 # @param var_y the variance of y (log10 IC-80)
 # @return the value of Sigma_{12} (i.e., the covariance between x and y)
 get_sigma <- function(r2 = 0.345, var_y = 1, var_x = 1) {
-    return(1 - r2 / (var_y * var_x))
+    return((1 - r2) * (var_y * var_x))
 }
 
 # generate continuous data
