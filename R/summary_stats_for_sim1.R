@@ -8,13 +8,13 @@ bnabs <- c("vrc01", "pgt121", "vrc07-523-ls", "vrc07-523-ls_10-1074",
 ests <- c(.345, .744, .571, .85, .193, .728, .319, .783, .316, .768,
           .255, .638, .181, .73, .254, .81)
 
-output <- tibble::tibble(bnab = rep(bnabs, each = 2),
+output <- tibble::tibble(bnab = rep(gsub("/", "-", bnabs), each = 2),
                          outcome = rep(c("ic80", "sens"), length(bnabs)),
                          est = ests,
                          mn_y = rep(NA_real_, length(bnabs) * 2),
                          var_y = rep(NA_real_, length(bnabs) * 2))
 for (i in 1:nrow(output)) {
-  bnab <- output$bnab[i]
+  bnab <- bnabs[which(gsub("/", "-", bnabs) == output$bnab[i])]
   this_folder <- here::here("docker_output", 
                             paste0(switch((output$outcome[i] == "ic80") + 1, NULL, "continuous/"),
                             bnab))

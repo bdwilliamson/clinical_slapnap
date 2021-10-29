@@ -19,6 +19,9 @@ get_sigma <- function(r2 = 0.345, var_y = 1, var_x = 1) {
 gen_data_continuous <- function(n = 100, epsilon = 0.2, r2 = 0.345, var_y = 1, mu = 0) {
     # generate w, y for everyone
     cov <- get_sigma(r2 = r2, var_y = var_y, var_x = var_y)
+    if (cov > var_y) {
+        cov <- var_y - 0.2
+    }
     Sigma <- matrix(c(var_y, cov, cov, var_y), nrow = 2, byrow = TRUE)
     # note that this is (Y, W)
     n2 <- n * (1 + epsilon)
