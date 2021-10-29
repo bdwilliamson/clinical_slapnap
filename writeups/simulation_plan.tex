@@ -41,7 +41,7 @@
 
 This document describes the planned simulations for the clinical SLAPNAP manuscript. The simulations address the following goals:
 \begin{enumerate}
-    \item determine if using external data (i.e., Env sequences) results in variance reduction for estimating R-squared and AUC; and
+    \item determine if using external data (i.e., Env sequences) results in variance reduction for estimating the mean $\log_{10}$ IC$_{80}$ value and/or the probability that IC$_{80} < 1$; and
     \item determine if using SLAPNAP can improve sieve analysis.
 \end{enumerate}
 In the next section, I describe my proposed approach to answering these two questions using simulations.
@@ -51,21 +51,31 @@ In the next section, I describe my proposed approach to answering these two ques
 \subsubsection{Continuous outcome}
 The simplest case for examining variance reductions is in the case of a continuous outcome (quantitative IC$_{80}$). The results from SLAPNAP runs predicting IC$_{80}$ for each bnAb in Table 1 of the SLAPNAP clinical manuscript are presented in the second column of Table~\ref{tab:perf}.
 
-For this simulation, for each bnAb in Table~\ref{tab:perf}, we denote by $X$ the $\log_{10}$ PAR score obtained from SLAPNAP and by $Y$ the $\log_{10}$ IC$_{80}$ readout. We suppose that $(X,Y) \sim N(\mu, \Sigma)$, where $\mu = (\mu_1, \mu_2)$ is a mean vector and $\Sigma = \begin{bmatrix} \Sigma_{11} & \Sigma_{12} \\ \Sigma_{21} & \Sigma_{22} \end{bmatrix}$ is a covariance matrix. For simplicity, we set $\mu_1 = \mu_2 = \mu^*$, with $\mu^*$ the mean IC$_{80}$ value in the CATNAP data for the specified bnAb (or bnAb regimen), and set $\Sigma_{11} = \Sigma_{22} = \Sigma^*$, with $\Sigma^*$ the variance of IC$_{80}$ in the CATNAP data for the specified bnAb (or bnAb regimen). Under this model, we can write
+For this simulation, for each bnAb in Table~\ref{tab:perf}, we denote by $W$ the $\log_{10}$ PAR score obtained from SLAPNAP (note that the untransformed PAR score is an estimator of $IC_{80}$ in this case) and by $Y$ the $\log_{10}$ IC$_{80}$ readout. We suppose that $(W,Y) \sim N(\mu, \Sigma)$, where $\mu = (\mu_1, \mu_2)$ is a mean vector and $\Sigma = \begin{bmatrix} \Sigma_{11} & \Sigma_{12} \\ \Sigma_{21} & \Sigma_{22} \end{bmatrix}$ is a covariance matrix. For simplicity, we set $\mu_1 = \mu_2 = \mu^*$, with $\mu^*$ the mean $\log_{10}$ IC$_{80}$ value in the CATNAP data for the specified bnAb (or bnAb regimen), and set $\Sigma_{11} = \Sigma_{22} = \Sigma^*$, with $\Sigma^*$ the variance of $\log_{10}$ IC$_{80}$ in the CATNAP data for the specified bnAb (or bnAb regimen). Under this model, we can write
 \begin{align*}
-    R^2 =& \ 1 - \frac{var(X)}{var(Y)} \\
+    R^2 =& \ 1 - \frac{var(W)}{var(Y)} \\
     =& \ 1 - \frac{\Sigma_{12}^2\Sigma_{22}^{-1}}{\Sigma_{11}}.
 \end{align*}
-We can then generate data according to $\Sigma_{12}^2 = (1 - R^2)\Sigma_{22}\Sigma_{11}$, using the point estimates of CV-$R^2$ provided in Table~\ref{tab:perf} (and under the simplifying assumption made above, $\Sigma_{11} = \Sigma_{22} = \Sigma^*$).
+We can then generate data according to $\Sigma_{12}^2 = (1 - R^2)\Sigma_{22}\Sigma_{11}$, using the point estimates of CV-$R^2$ provided in Table~\ref{tab:perf} (and under the simplifying assumption made above, $\Sigma_{11} = \Sigma_{22} = \Sigma^*$). We could also consider using a smaller number of values: for example, the median of the CV-$R^2$ values, the minimum value, and the maximum value.
 
-For each bnAb, we generate 1000 random datasets according to the following specification. We generate $n = 1000$ IC$_{80}$ values and corresponding Env sequences from a $N(\mu, \Sigma)$ distribution, resulting in $X$ and $Y$. We truncate $Y$ at 1 (equivalent to an IC$_{80}$ of 10), since high values of IC$_{80}$ are difficult to quantify. We then generate $(1 + \epsilon)n$ additional Env sequences from this same distribution without IC$_{80}$ measured, where $\epsilon \in \{0.5, 1, 2\}$; we call these data $W$. The final dataset is then $(W, X, Y)$. We will generate 3000 total replications, 1000 for each value of $\epsilon$.
+For each bnAb under consideration (either all in Table 1 or three ``bnAbs'' corresponding to the three CV-$R^2$ values highlighted above), we generate 1000 random datasets according to the following specification:
+\begin{enumerate}
+    \item We generate $n = 1000$ iid copies $(W_i, Y_i) \sim N(\mu^*, \Sigma^*)$, where again $Y$ denotes the $\log_{10}$ IC$_{80}$ values and $W$ denotes the corresponding $\log_{10}$ PAR scores. We truncate the upper limit of $Y$ at 1 (equivalent to an IC$_{80}$ of 10). We have found that IC$_{80} > 10$ mcg/ml indicates that a virus is resistant to the bnAb (regimen). Thus, this cutoff provides the key information for discriminating viruses above a cutoff of 10, and our interest is in discriminating viruses below this cutoff.
+    \item We then generate $\epsilon \times 100$\% additional $\log_{10}$ PAR scores from this same distribution and suppress the IC$_{80}$ measurement, where $\epsilon \in \{0.5, 1, 2\}$.
+\end{enumerate}
+We use the variable $R$ to indicate whether $Y$ was observed or not; $R_i = 1$ implies that $Y_i$ was observed. The final dataset is then $(W, R, RY)$. Note that in this example, $\lambda \equiv \lambda(w) = P(R = 1 \mid W = w) = P(R = 1)$, since observing $Y$ is independent of the PAR score. We will generate 3000 total replications, 1000 for each value of $\epsilon$.
 
-For each random dataset, we estimate the mean of $Y$ using $(X,Y)$ and using $(W,X,Y)$. In other words, setting $U = (X,Y)$ (yielding $2n$ observations of $U$) and $V = (W,X,Y)$ (yielding $n(3 + \epsilon)$ observations of $V$), we compute
+For each random dataset, our goal is to estimate the mean value of $Y$, $\theta \equiv E(Y)$; we will compare estimating $\theta$ among those pseudoviruses with $R_i = 1$ (using $n$ observations) to estimating $\theta$ using all pseudoviruses with a $\log_{10}$ PAR score (using $(1+\epsilon)n$ observations). We estimate the mean using the method of Rotnitzky and Robins (1995), and use code developed by Gilbert, Yu, and Rotnitzky (2013). In particular, the semiparametric efficient estimator of $\theta$ based on a sample of size $n$ (denoted by $\theta_n$) solves the estimating equation $\sum_{i=1}^n U_i(\theta, \lambda_i) = 0$, where
 \begin{align*}
-    \overline{Y}_1 =& \ \frac{1}{2n}\sum_{i=1}^{2n}U_i \\
-    \overline{Y}_2 =& \ \frac{1}{n(3 + \epsilon)}\sum_{i=1}^{n(3 + \epsilon)}V_i;\\
+    U_i(\theta, \lambda_i) =& \ \frac{R_i}{\lambda_i}(Y_i - \theta) - \frac{(R_i - \lambda_i)}{\lambda_i}\{E(Y \mid W_i) - \theta\}.
 \end{align*}
-since both $X_i$ and $W_i$ are predictions of $Y_i$, each provides us with information about the outcome. We then compute the Monte-Carlo variance of the estimated means $\overline{Y}_1$ and $\overline{Y}_2$ over the 1000 replications, and estimate the relative efficiency of using $W$ by taking the ratio of the Monte-Carlo variance ignoring $W$ to the Monte-Carlo variance using $W$.
+We estimate $E(Y \mid W_i)$ using ordinary least squares -- denoting our estimator as $g_n: w \mapsto g_n(w)$ -- and then can use the estimating equation above to obtain an estimator of $\theta$. In our case, a consistent estimator of $\lambda$ is $\lambda_{n,i} = n / \{(1 + \epsilon)n\}$ for all $i$. In this special case, a closed form solution for $\theta$ exists:
+\begin{align*}
+    \theta_n = \frac{1}{n\lambda_n}\sum_{i=1}^nR_i(Y_i - g_n(W_i)) + \frac{1}{n}\sum_{i=1}^n g_n(W_i)
+\end{align*}
+ We obtain two estimators, $\theta_{n,1}$ and $\theta_{n,2}$, corresponding to using only the data with observed outcome (i.e., $R_i = 1$) and using the additional data, respectively.
+
+We then compute the Monte-Carlo variance of the estimated means $\theta_{n,1}$ and $\theta_{n,2}$ over the 1000 replications, and estimate the relative efficiency of using the additional pseudoviruses by taking the ratio of the Monte-Carlo variance ignoring the additional pseudoviruses (the Monte-Carlo variance of $\theta_{n,1}$) to the Monte-Carlo variance using the additional pseudoviruses (the Monte-Carlo variance of $\theta_{n,2}$).
 
 \begin{table}
     \centering
@@ -88,24 +98,19 @@ since both $X_i$ and $W_i$ are predictions of $Y_i$, each provides us with infor
 
 \subsubsection{Binary outcome}
 
-We use a similar approach for binary outcomes to the approach outlined in the previous section. We now denote by $Y$ the indicator that IC$_{80} < 1$, and denote by $X$ the $\log_{10}$ PAR score. We suppose that $Y \sim Bern(p)$, where $p$ is the sample proportion for each bnAb in the CATNAP data, and that $X \mid Y = y \sim N(\mu_y, \sigma^2_y)$. Based on this specification, we can write (for two iid samples $(X_1, Y_1)$ and $(X_2, Y_2)$)
+We use a similar approach for binary outcomes to the approach outlined in the previous section. We now denote by $Y$ the indicator that IC$_{80} < 1$, and denote by $W$ the logit PAR score. In this setting, where we are predicting a binary outcome, the (untransformed) PAR score for a given pseudovirus is the predicted probability that the pseudovirus has IC$_{80} < 1$ based on the AA sequence, and thus lies in $[0,1]$; the logit PAR score then lies in $(-\infty, \infty)$. We suppose that $Y \sim Bern(p)$, where $p$ is the sample proportion for each bnAb in the CATNAP data, and that $W \mid Y = y \sim N(\mu_y, \sigma^2_y)$. Based on this specification, we can write (for two iid samples $(W_1, Y_1)$ and $(W_2, Y_2)$)
 \begin{align*}
-    AUC =& P(X_1 < X_2 \mid Y_1 = 0, Y_2 = 1) \\
-    =& \ P(X_2 - X_1 > 0 \mid Y_1 = 0, Y_2 = 1);
+    AUC =& P(W_1 < W_2 \mid Y_1 = 0, Y_2 = 1) \\
+    =& \ P(W_2 - W_1 > 0 \mid Y_1 = 0, Y_2 = 1);
 \end{align*}
-setting $Z = X_2 - X_1$, we see that $Z$ has a normal distribution with mean $\mu_1 - \mu_0$ and variance $\sigma^2_0 + \sigma^2_1$. Thus,
+setting $Z = W_2 - W_1$, we see that $Z$ has a normal distribution with mean $\mu_1 - \mu_0$ and variance $\sigma^2_0 + \sigma^2_1$. Thus,
 \begin{align*}
     AUC =& \ P\left(\frac{Z - (\mu_1 - \mu_0)}{\sqrt{\sigma^2_0 + \sigma^2_1}} > \frac{- (\mu_1 - \mu_0)}{\sqrt{\sigma^2_0 + \sigma^2_1}}\right) \\
     \Rightarrow \frac{(\mu_1 - \mu_0)}{\sqrt{\sigma^2_1 + \sigma^2_0}} =& \ (-1)\Phi^{-1}(1 - AUC),
 \end{align*}
-where $\Phi$ denotes the standard normal cdf. Thus, setting $\sigma^2_1 = \sigma^2_0 = 0.005$ and $\mu_0 = -0.32$ (corresponding to a mean PAR score of 0.47 among those with $Y = 0$), we can generate $n$ iid copies of $X$ and $Y$, and generate $n(1 + \epsilon)$ iid copies of $W$ (the additional Env sequences).
+where $\Phi$ denotes the standard normal cdf. Thus, setting $\sigma^2_1 = \sigma^2_0 = 0.005$ and $\mu_0 = -0.32$ (corresponding to a mean PAR score of 0.42 among those with $Y = 0$), we can generate $n$ iid copies of $W$ and $Y$ with $R = 1$, and generate $\epsilon \times 100$\% iid copies of $W$ with $R = 0$ (the additional logit PAR scores). Again, the full data are $(1 + \epsilon)n$ iid copies of $(W_i, R_i, R_iY_i)$.
 
-For each random dataset, we again create vectors $U$ and $V$, where now $U = (I(10 ^ X > 0.5), Y)$ and $V = (I(10 ^ X > 0.5), I(10^W > 0.5), Y)$. Then we compute
-\begin{align*}
-    \overline{P}_1 =& \ \frac{1}{2n}\sum_{i=1}^{2n} U_i \text{ and } \\
-    \overline{P}_2 =& \ \frac{1}{n(3+\epsilon)}\sum_{i=1}^{n(3+\epsilon)}V_i;
-\end{align*}
-these estimate the probability that IC$_{80} < 1$. We then compute the Monte-Carlo variance of the estimated means over the 1000 replications, and estimate the relative efficiency of using $W$ by taking the ratio of the Monte-Carlo variance ignoring $W$ to the Monte-Carlo variance using $W$.
+For each random dataset, our goal is now to estimate $\theta = E(Y) = P(\text{IC}_{80} < 1)$; we will again compare estimating $\theta$ among those pseudoviruses with $R_i = 1$ (using $n$ observations) to estimating $\theta$ using all pseudoviruses with a logit PAR score (using $(1+\epsilon)n$ observations). We use an identical estimation procedure to that described in the previous section, with one exception: we use a logistic regression model to estimate $E(Y \mid W_i)$. We then compute the Monte-Carlo variance of the estimated means over the 1000 replications as before, and estimate the relative efficiency of using the additional pseudoviruses by taking the ratio of the Monte-Carlo variance ignoring the additional pseudoviruses to the Monte-Carlo variance using the additional pseudoviruses.
 
 \subsection{Sieve analysis}
 
@@ -119,9 +124,9 @@ Next, we define the alternative hypotheses for sieve effects at each site. We as
 \end{align*}
 where $\gamma_i$ is the fraction of placebo-arm AMP viruses that have the putative resistant genotype. This allows us to determine the alternative hypothesis for each site. For all other gp120 sites, we assume the null hypothesis $PE(\text{putative resistant genotype at site } H_i) = PE(\text{other genotype at site } H_i)$. We compute each $\gamma$ using the AMP data.
 
-For each of 1000 Monte-Carlo replications, we generate data for each site in gp120 and apply a standard Lunn and McNeil test for differential PE at each gp120 site with two-sided level 0.05; we define a detection as the resulting p-value from this test being less than the multiplicity-adjusted threshold of 0.05 / (number of sites in gp120 with enough variability). We compute the power as the Monte-Carlo average number of true detections.
+For each of 1000 Monte-Carlo replications, we generate data for each site in gp120 and apply a standard Lunn and McNeil test for differential PE at each gp120 site with two-sided level 0.05; we define a detection as the resulting p-value from this test being less than the family-wise error rate using a multiplicity-adjusted threshold of 0.05, implemented using a Holm-Bonferroni adjustment. We compute the power as the Monte-Carlo average number of true detections.
 
-We also perform a separate 1000 Monte-Carlo replications, generating data for each site in gp120 and apply a standard Lunn and McNeil test for differential PE at each of the important high-variability sites with two-sided level 0.05; we define a detection as the resulting p-value from this test being less than the multiplicity-adjusted threshold of 0.05 / 26. We compute the power as the Monte-Carlo average number of true detections.
+We also perform a separate 1000 Monte-Carlo replications, generating data for each site in gp120 and apply a standard Lunn and McNeil test for differential PE at each of the important high-variability sites with two-sided level 0.05; we define a detection as the resulting p-value from this test being less than the family-wise error rate multiplicity-adjusted threshold of 0.05, again using a Holm-Bonferroni adjustment. These testing procedures have the opportunity to provide greater power because they adjust for a smaller number of hypothesis tests, if indeed the SLAPNAP PAR score procedure for enriching sites most likely to impact in vivo vaccine efficacy has some predictive power. We compute the power as the Monte-Carlo average number of true detections across the 1000 replications.
 
 Comparing the power of these two approaches (analyze all of gp120, analyze only the important high-variability sites) will provide a useful description of how much SLAPNAP aids in sieve analysis.
 \end{document}
