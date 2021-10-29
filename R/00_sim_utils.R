@@ -44,6 +44,7 @@ gen_data_continuous <- function(n = 100, epsilon = 0.2, r2 = 0.345, var_y = 1, m
 get_mu <- function(auc = 0.744, mu0 = -0.32, sigma0 = 0.005, sigma1 = 0.005) {
     return(sqrt(sigma0 + sigma1) * (-1) * qnorm(1 - auc) + mu0)
 }
+expit <- function(x) exp(x) / (1 + exp(x))
 
 # generate a binary dataset
 # @param n the sample size
@@ -65,7 +66,7 @@ gen_data_binary <- function(n = 100, epsilon = 0.2, auc = 0.744, mu0 = -0.32, si
     # generate R
     r1 <- sample(1:n2, size = n, replace = FALSE)
     r <- ifelse(1:n2 %in% r1, 1, 0)
-    newdat <- data.frame(w = w, r = r, y = ifelse(r == 1, y, 0), ystar = y)
+    newdat <- data.frame(w = expit(w), r = r, y = ifelse(r == 1, y, 0), ystar = y)
     return(newdat)
 }
 

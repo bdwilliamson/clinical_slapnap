@@ -41,7 +41,7 @@ if (args$outcome == "ic80") {
     params_lst <- list(mu = these_summary_statistics$mn_y, 
                        var_y = these_summary_statistics$var_y)
 } else {
-    params_lst <- list(mu0 = -0.32, sigma0 = 0.005, sigma1 = 0.005, 
+    params_lst <- list(mu0 = -0.32, sigma0 = 0.2, sigma1 = 0.2, 
                        p_y = these_summary_statistics$mn_y)
 }
 
