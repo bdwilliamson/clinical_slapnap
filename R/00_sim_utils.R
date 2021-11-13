@@ -1,5 +1,7 @@
 # utility functions for simulation 1: assess relative efficiency of using extra Env sequences
 
+# for simulation 1 -------------------------------------------------------------
+
 # compute the covariance based on R-squared
 # @param r2 the r-squared
 # @param var_x the variance of x (log10 PAR score)
@@ -110,9 +112,18 @@ get_ests <- function(mc_id = 1, n = 100, epsilon = 0.2, point_est = 0.2, datatyp
     theta_aug <- est_theta(dat = dat, preds = g_n, lambda = lambda_n, augmented = TRUE)
     true_mn_y <- mean(ystar)
     # make a little tibble
-    ret <- tibble::tibble(mc_id = mc_id, n = n, epsilon = epsilon, 
-                          point_est = point_est, augmented = c(FALSE, TRUE), 
-                          datatype = datatype, est = c(theta, theta_aug), 
+    ret <- tibble::tibble(mc_id = mc_id, n = n, epsilon = epsilon,
+                          point_est = point_est, augmented = c(FALSE, TRUE),
+                          datatype = datatype, est = c(theta, theta_aug),
                           truth = true_mn_y)
     return(ret)
+}
+
+# for simulation 2 -------------------------------------------------------------
+# generate a dataset
+# @param gamma the vector of gamma values for the important sites
+# @param n the sample size
+# @return a dataset with outcomes and gp120 AA sites
+gen_data_sim2 <- function(n = 1000, gamma) {
+    
 }
