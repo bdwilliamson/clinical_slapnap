@@ -11,7 +11,9 @@ source(here("R", "compute_table_1_stats_nab.R"))
 source(here("R", "00_utils.R"))
 source(here("R", "02_multi_ab.Rlib"))
 
-nabs <- c("VRC01", "VRC07-523-LS", "PGT121", "VRC07-523-LS;PGT121", "VRC07-523-LS;PGDM1400", "VRC07-523-LS;10-1074", "VRC07-523-LS;PGDM1400;PGT121", "VRC01/PGDM1400-10E8v4")
+nabs <- c("VRC01", "VRC07-523-LS", "PGT121", "PGDM1400", "VRC26.25", 
+          "VRC07-523-LS;PGT121", "VRC07-523-LS;PGDM1400", "VRC07-523-LS;VRC26.25",
+          "VRC07-523-LS;10-1074", "VRC07-523-LS;PGDM1400;PGT121", "VRC01/PGDM1400-10E8v4")
 
 # read in the assay, virus, mAb data
 data.assay <- read_delim(here("dat", "catnap", "assay.txt"), delim = "\t", quote = "\"")

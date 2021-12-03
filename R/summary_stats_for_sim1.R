@@ -1,12 +1,19 @@
 # create a table with the mean and variance of the outcome, 
 # along with R-squared / (estimated) sensitivity for each bnab and outcome
 library("tidyverse")
-bnabs <- c("vrc01", "pgt121", "vrc07-523-ls", "vrc07-523-ls_10-1074",
+bnabs <- c("vrc01", "pgt121", "vrc07-523-ls", "vrc26.25", "vrc07-523-ls_10-1074",
            "vrc07-523-ls_pgt121", "vrc07-523-ls_pgdm1400", "vrc07-523-ls_pgt121_pgdm1400",
            "vrc01/pgdm1400-10e8v4")
 # note that this goes (ic80, sens) for each bnab
-ests <- c(.345, .744, .571, .85, .193, .728, .319, .783, .316, .768,
-          .255, .638, .181, .73, .254, .81)
+ests <- c(.345, .744, # vrc01
+          .571, .85, # pgt121
+          .193, .728, # vrc07-523-ls
+          .53, .867, # vrc26.25
+          .319, .783, # vrc07-523-ls + 10-1074
+          .316, .768, # vrc07-523-ls + pgt121
+          .255, .638, # vrc07-523-ls + pgdm1400
+          .181, .73, # vrc07-523-ls + pgt121 + pgdm1400
+          .254, .81) # vrc01/pgdm1400-10e8v4
 
 output <- tibble::tibble(bnab = rep(gsub("/", "-", bnabs), each = 2),
                          outcome = rep(c("ic80", "sens"), length(bnabs)),
