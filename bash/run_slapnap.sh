@@ -2,7 +2,9 @@
 
 # all of the nabs in Table 1
 ALL_NABS=("VRC01" "VRC07-523-LS" "PGT121" \
+          "VRC26.25" "PGDM1400" \
           "VRC07-523-LS+PGDM1400" \
+          "VRC07-523-LS+VRC26.25" \
           "VRC07-523-LS+10-1074" \
           "VRC07-523-LS+PGT121" \
           "VRC07-523-LS+PGT121+PGDM1400" \
