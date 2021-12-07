@@ -1,17 +1,20 @@
 # create a table with the mean and variance of the outcome, 
 # along with R-squared / (estimated) sensitivity for each bnab and outcome
 library("tidyverse")
-bnabs <- c("vrc01", "pgt121", "vrc07-523-ls", "vrc26.25", "vrc07-523-ls_10-1074",
-           "vrc07-523-ls_pgt121", "vrc07-523-ls_pgdm1400", "vrc07-523-ls_pgt121_pgdm1400",
+bnabs <- c("vrc01", "vrc07-523-ls", "pgt121", "vrc26.25", "pgdm1400", 
+           "vrc07-523-ls_pgt121", "vrc07-523-ls_vrc26.25", "vrc07-523-ls_pgdm1400", "vrc07-523-ls_10-1074", 
+           "vrc07-523-ls_pgt121_pgdm1400",
            "vrc01/pgdm1400-10e8v4")
 # note that this goes (ic80, sens) for each bnab
 ests <- c(.345, .744, # vrc01
-          .571, .85, # pgt121
           .193, .728, # vrc07-523-ls
+          .571, .85, # pgt121
           .53, .867, # vrc26.25
-          .319, .783, # vrc07-523-ls + 10-1074
+          .501, .873, # pgdm1400
           .316, .768, # vrc07-523-ls + pgt121
+          .373, .689, # vrc07-523-ls + vrc26.25
           .255, .638, # vrc07-523-ls + pgdm1400
+          .319, .783, # vrc07-523-ls + 10-1074
           .181, .73, # vrc07-523-ls + pgt121 + pgdm1400
           .254, .81) # vrc01/pgdm1400-10e8v4
 
@@ -25,7 +28,7 @@ for (i in 1:nrow(output)) {
   this_folder <- here::here("docker_output", 
                             paste0(switch((output$outcome[i] == "ic80") + 1, NULL, "continuous/"),
                             bnab))
-  this_datafile <- list.files(this_folder, pattern = ".csv")
+  this_datafile <- list.files(this_folder, pattern = ".csv")[length(list.files(this_folder, pattern = ".csv"))]
   data <- readr::read_csv(paste0(this_folder, "/", this_datafile))
   this_outcome <- ifelse(output$outcome[i] == "ic80", "ic80", 
                          ifelse(grepl("_", bnab, fixed = TRUE), "estsens", "sens"))
