@@ -37,7 +37,7 @@ dat <- read_csv(here::here("dat", paste0("slapnap_lanl_", args$bnab, "_wcountry.
 # redefine the outcome of interest, remove unneccessary variables
 refined_dat <- dat %>%
   select(-seq.id.lanl, -seq.id.catnap, -num.seqs.in.country.catnap, -num.seqs.in.country.all,
-         -contains("ic50"), -contains("censored")) %>%
+         -seq.in.catnap, -seq.in.lanl.2019, -contains("ic50"), -contains("censored")) %>%
   rename(ic80 = !!(paste0(args$bnab, ".ic80.imputed")))
 
 if (args$outcome == "sens") {
