@@ -8,8 +8,13 @@ library("here")
 library("tidyverse")
 library("data.table")
 library("argparse")
+library("SuperLearner")
+library("glmnet")
+library("ranger")
+library("xgboost")
 
 source(here("R", "00_sim_utils.R"))
+source(here("R", "00_utils.R"))
 
 # get command-line args --------------------------------------------------------
 # these specify the bnAb of interest, min number of readouts to specify the country(ies) of interest,
@@ -21,13 +26,13 @@ parser$add_argument("--outcome", default = "ic80", help = "the outcome of intere
 parser$add_argument("--output-dir", default = here::here("R_output", "simulation_1b"), help = "the output directory")
 args <- parser$parse_args()
 
-print(paste0("Running bnAb ", args$bnab, " for country ", args$country))
+print(paste0("Running bnAb ", args$bnab))
 
 outcome_type <- ifelse(args$outcome == "ic80", "continuous", "binary")
 
 # set up the dataset -----------------------------------------------------------
 # read in the data
-dat <- read_csv(here::here("data", paste0("slapnap_lanl_", args$bnab, "_wcountry.csv")))
+dat <- read_csv(here::here("dat", paste0("slapnap_lanl_", args$bnab, "_wcountry.csv")))
 
 # redefine the outcome of interest, remove unneccessary variables
 refined_dat <- dat %>%
@@ -50,18 +55,16 @@ countries_of_interest <- unlist(all_countries)[countries_above_threshold]
 
 # get predictions from SLAPNAP--------------------------------------------------
 # read in the correct model
-all_learner_files <- list.files(here::here("docker_output",
-                                      paste0(switch(as.numeric(outcome_type == "continuous") + 1, NULL, "continuous"), tolower(args$bnab))),
+slapnap_folder <- here::here("docker_output",
+                             paste0(switch(as.numeric(outcome_type == "continuous") + 1, NULL, "continuous"), "/", tolower(args$bnab)))
+all_learner_files <- list.files(slapnap_folder,
                            pattern = paste0("learner_", args$outcome, "_", args$bnab))
 learner_files <- all_learner_files[!grepl("cv", all_learner_files)]
 dates <- as.Date(gsub(paste0("learner_", args$outcome, "_", args$bnab, "_"), "", gsub(".rds", "", learner_files)),
                     format = "%d%b%Y")
 current_date <- Sys.Date()
 closest_date <- which.min(current_date - dates)
-slapnap_mod <- readRDS(here::here("docker_output",
-                                  switch(as.numeric(outcome_type == "continuous") + 1, NULL, "continuous")),
-                       tolower(args$bnab),
-                       learner_files[closest_date])
+slapnap_mod <- readRDS(paste0(slapnap_folder, "/", learner_files[closest_date]))
 
 # run the analyses -------------------------------------------------------------
 output <- NULL
@@ -76,8 +79,7 @@ for (country in countries_of_interest) {
   n_overall <- nrow(country_data)
 
   # get predictions from SLAPNAP
-  # preds <- predict(slapnap_mod, newdata = X, onlySL = TRUE)$pred
-  preds <- predict(slapnap_mod, newdata = X)
+  preds <- predict(slapnap_mod, newdata = X, onlySL = TRUE)$pred
   if (args$outcome == "ic80") {
     w <- preds
   } else {
