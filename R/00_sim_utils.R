@@ -88,7 +88,7 @@ est_theta <- function(dat, preds, lambda, augmented = TRUE) {
         preds <- preds[dat$r == 1]
         dat <- dat[dat$r == 1, ]
     }
-    theta_n <- (1 / lambda) * mean(dat$r * (dat$y - preds)) + mean(preds)
+    theta_n <- (1 / lambda) * mean(dat$r * (dat$y - preds), na.rm = TRUE) + mean(preds)
     return(theta_n)
 }
 
