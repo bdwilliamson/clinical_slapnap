@@ -5,12 +5,11 @@ ml fhR/4.0.2-foss-2019b
 ml jbigkit
 
 # all bnabs
-bnabs=("VRC01" "VRC07-523-LS" "PGT121" \
-          "VRC07-523-LS_PGDM1400" \
-          "VRC07-523-LS_10-1074" \
-          "VRC07-523-LS_PGT121" \
-          "VRC07-523-LS_PGT121_PGDM1400" \
-          "VRC01-PGDM1400-10E8v4")
+bnabs=("VRC01" "VRC07-523-LS" "PGT121" "VRC26.25" "PGDM1400" \
+        "VRC07-523-LS_PGT121" "VRC07-523-LS_VRC26.25" \
+        "VRC07-523-LS_PGDM1400" "VRC07-523-LS_10-1074" \
+        "VRC07-523-LS_PGT121_PGDM1400" \
+        "VRC01-PGDM1400-10E8v4")
 outcomes=("ic80" "sens")
 
 nreps_per_job=1000
