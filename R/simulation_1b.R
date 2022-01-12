@@ -145,9 +145,9 @@ for (i in seq_len(length(countries_of_interest))) {
   g_n <- est_g(dat = analysis_dataset, type = outcome_type)
   # estimate parameter of interest
   theta <- est_theta(dat = analysis_dataset, preds = g_n, lambda = lambda_n, augmented = FALSE)
-  var_theta <- est_var(dat = analysis_dataset, preds = preds, lambda = lambda_n, theta = theta)
+  var_theta <- est_var(dat = analysis_dataset, preds = g_n, lambda = lambda_n, theta = theta)
   theta_aug <- est_theta(dat = analysis_dataset, preds = g_n, lambda = lambda_n, augmented = TRUE)
-  var_theta_aug <- est_var(dat = analysis_dataset, preds = preds, lambda = lambda_n, theta = theta_aug)
+  var_theta_aug <- est_var(dat = analysis_dataset, preds = g_n, lambda = lambda_n, theta = theta_aug)
 
 
   output <- bind_rows(
