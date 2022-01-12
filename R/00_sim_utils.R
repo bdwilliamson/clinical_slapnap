@@ -92,6 +92,12 @@ est_theta <- function(dat, preds, lambda, augmented = TRUE) {
     return(theta_n)
 }
 
+# for simulation 1b
+est_var <- function(dat, theta, preds, lambda) {
+    eif <- (dat$r / lambda) * (dat$y - theta) - ((dat$r - lambda) / lambda) * (preds - theta)
+    return(mean(eif ^ 2, na.rm = TRUE))
+}
+
 # get one set of estimates
 get_ests <- function(mc_id = 1, n = 100, epsilon = 0.2, point_est = 0.2, datatype = "binary", params = list( mu0 = -0.32, sigma0 = 0.005, sigma1 = 0.005, p_y = 0.5), augmented = TRUE) {
     # generate data; a data.frame (W, R, RY)
@@ -172,14 +178,14 @@ gen_data_sim2 <- function(n = 1000, J = 100, gamma, delta = log(1 - .29), lambda
 # @param lambda the non-genotype-specific event rate
 # @param eos end of study time
 # @param site_scanning should we look at all sites (TRUE) or the sites specified in 'positions' (FALSE)?
-# @param positions a vector of AA positions to look at for sieve analysis 
+# @param positions a vector of AA positions to look at for sieve analysis
 ##         (only used in the sieve analysis if site_scanning = FALSE)
 # @return whether or not each important site was truly detected
-run_sim2_once <- function(mc_id = 1, n = 1000, J = 100, gamma, delta = log(1 - .29), 
+run_sim2_once <- function(mc_id = 1, n = 1000, J = 100, gamma, delta = log(1 - .29),
                           lambda = -log(.85)/3, eos = 3, site_scanning = TRUE,
                           positions = c(1:26)) {
     # generate data
-    dat <- gen_data_sim2(n = n, J = J, gamma = gamma, delta = delta, lambda = lambda, 
+    dat <- gen_data_sim2(n = n, J = J, gamma = gamma, delta = delta, lambda = lambda,
                          eos = eos, positions = positions)
     # do sieve analysis
     if (site_scanning) {
@@ -188,18 +194,18 @@ run_sim2_once <- function(mc_id = 1, n = 1000, J = 100, gamma, delta = log(1 - .
         for (j in seq_len(J)) {
             this_mark <- dat %>% pull(!!paste0("X", j))
             this_mark[dat$y == 0] <- NA
-            this_result <- sievePH::sievePH(eventTime = dat$t, eventInd = dat$y, 
+            this_result <- sievePH::sievePH(eventTime = dat$t, eventInd = dat$y,
                                             mark = this_mark, tx = dat$a)
             this_summ <- summary(this_result, markGrid = 0)
             all_pvals[j] <- this_summ$pWald.HRconstant.2sided
-        } 
+        }
     } else {
         # run at only the prespecified positions
         all_pvals <- vector("numeric", length = length(positions))
         for (j in seq_len(length(positions))) {
             this_mark <- dat %>% pull(!!paste0("X", positions[j]))
             this_mark[dat$y == 0] <- NA
-            this_result <- sievePH::sievePH(eventTime = dat$t, eventInd = dat$y, 
+            this_result <- sievePH::sievePH(eventTime = dat$t, eventInd = dat$y,
                                             mark = this_mark, tx = dat$a)
             this_summ <- summary(this_result, markGrid = 0)
             all_pvals[j] <- this_summ$pWald.HRconstant.2sided
