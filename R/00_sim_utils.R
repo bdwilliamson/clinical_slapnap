@@ -93,9 +93,36 @@ est_theta <- function(dat, preds, lambda, augmented = TRUE) {
 }
 
 # for simulation 1b
-est_var <- function(dat, theta, preds, lambda) {
-    eif <- (dat$r / lambda) * (dat$y - theta) - ((dat$r - lambda) / lambda) * (preds - theta)
+est_var <- function(dat, theta, preds, lambda, augmented = TRUE) {
+    if (!augmented) {
+        y <- dat$y[dat$r == 1]
+        r <- rep(1, length(y))
+        preds <- preds[dat$r == 1]
+    } else {
+        y <- dat$y
+        r <- dat$r
+    }
+    eif <- (r / lambda) * (y - theta) - ((r - lambda) / lambda) * (preds - theta)
     return(mean(eif ^ 2, na.rm = TRUE))
+}
+
+sim1b_boot_stat <- function(data, indices, augmented, outcome_type, lambda) {
+    dat <- data[indices, ]
+    if (!augmented) {
+        dat <- subset(dat, r == 1)
+    } 
+    y <- dat$y
+    r <- dat$r
+    w <- dat$w
+    if (grepl("binary", outcome_type)) {
+        fam <- binomial()
+    } else {
+        fam <- gaussian()
+    }
+    g_n <- glm(y ~ w, data = dat, subset = (dat$r == 1), family = fam)
+    preds <- predict(g_n, newdata = dat, type = "response")
+    theta_n <- (1 / lambda) * mean(dat$r * (dat$y - preds), na.rm = TRUE) + mean(preds)
+    return(theta_n)
 }
 
 # get one set of estimates

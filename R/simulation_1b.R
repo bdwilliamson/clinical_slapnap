@@ -12,6 +12,7 @@ library("SuperLearner")
 library("glmnet")
 library("ranger")
 library("xgboost")
+library("boot")
 
 source(here("R", "00_sim_utils.R"))
 source(here("R", "00_utils.R"))
@@ -21,7 +22,7 @@ source(here("R", "03_super_learner_libraries.R"))
 # these specify the bnAb of interest, min number of readouts to specify the country(ies) of interest,
 # and the outcome type (binary or continuous)
 parser <- ArgumentParser()
-parser$add_argument("--bnab", default = "VRC07-523-LS_PGT121", help = "the bnAb of interest")
+parser$add_argument("--bnab", default = "VRC07-523-LS_PGDM1400", help = "the bnAb of interest")
 parser$add_argument("--country-threshold", type = "double", default = "20", help = "min number of neutralization readouts for consideration")
 parser$add_argument("--outcome", default = "sens", help = "the outcome of interest")
 parser$add_argument("--output-dir", default = here::here("R_output", "simulation_1b"), help = "the output directory")
@@ -132,9 +133,9 @@ for (i in seq_len(length(countries_of_interest))) {
   # get predictions from SLAPNAP
   preds <- predict(slapnap_mod, newdata = X, onlySL = TRUE)$pred
   if (args$outcome == "ic80") {
-    w <- preds
+    w <- as.numeric(preds)
   } else {
-    w <- expit(preds)
+    w <- as.numeric(expit(preds))
   }
   # set up the dataset
   analysis_dataset <- tibble::tibble(w = w, r = as.numeric(!is.na(y)),
@@ -145,10 +146,24 @@ for (i in seq_len(length(countries_of_interest))) {
   g_n <- est_g(dat = analysis_dataset, type = outcome_type)
   # estimate parameter of interest
   theta <- est_theta(dat = analysis_dataset, preds = g_n, lambda = lambda_n, augmented = FALSE)
-  var_theta <- est_var(dat = analysis_dataset, preds = g_n, lambda = lambda_n, theta = theta)
+  boot_theta <- boot::boot(data = analysis_dataset, statistic = sim1b_boot_stat,
+                           R = 1000, sim = "ordinary", stype = "i", 
+                           augmented = FALSE, lambda = lambda_n, 
+                           outcome_type = outcome_type)
+  boot_ci_theta <- boot::boot.ci(boot_theta, conf = 0.95, type = "perc")
   theta_aug <- est_theta(dat = analysis_dataset, preds = g_n, lambda = lambda_n, augmented = TRUE)
-  var_theta_aug <- est_var(dat = analysis_dataset, preds = g_n, lambda = lambda_n, theta = theta_aug)
-
+  boot_theta_aug <- boot::boot(data = analysis_dataset, statistic = sim1b_boot_stat,
+                               R = 1000, sim = "ordinary", stype = "i", 
+                               augmented = TRUE, lambda = lambda_n, 
+                               outcome_type = outcome_type)
+  boot_ci_theta_aug <- boot::boot.ci(boot_theta_aug, conf = 0.95, type = "perc")
+  if (is.null(boot_ci_theta)) {
+    boot_ci_theta <- list("percent" = matrix(c(0, 0, 0, theta, theta), nrow = 1))
+  }
+  if (is.null(boot_ci_theta_aug)) {
+    boot_ci_theta_aug <- list("percent" = matrix(c(0, 0, 0, theta_aug, theta_aug), nrow = 1))
+  }
+  cis <- rbind(boot_ci_theta$percent[, 4:5], boot_ci_theta_aug$percent[, 4:5])
 
   output <- bind_rows(
     output,
@@ -156,7 +171,8 @@ for (i in seq_len(length(countries_of_interest))) {
                    country = country, n_catnap = n_catnap, n_overall = n_overall,
                    augmented = c(FALSE, TRUE),
                    est = c(theta, theta_aug),
-                   est_var = c(var_theta, var_theta_aug))
+                   ci_ll = cis[, 1], ci_ul = cis[, 2]) %>% 
+      mutate(width = ci_ul - ci_ll)
   )
 }
 
