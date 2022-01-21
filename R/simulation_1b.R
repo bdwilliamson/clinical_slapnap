@@ -147,14 +147,14 @@ for (i in seq_len(length(countries_of_interest))) {
   # estimate parameter of interest
   theta <- est_theta(dat = analysis_dataset, preds = g_n, lambda = lambda_n, augmented = FALSE)
   boot_theta <- boot::boot(data = analysis_dataset, statistic = sim1b_boot_stat,
-                           R = 1000, sim = "ordinary", stype = "i", 
-                           augmented = FALSE, lambda = lambda_n, 
+                           R = 1000, sim = "ordinary", stype = "i",
+                           augmented = FALSE, lambda = lambda_n,
                            outcome_type = outcome_type)
   boot_ci_theta <- boot::boot.ci(boot_theta, conf = 0.95, type = "perc")
   theta_aug <- est_theta(dat = analysis_dataset, preds = g_n, lambda = lambda_n, augmented = TRUE)
   boot_theta_aug <- boot::boot(data = analysis_dataset, statistic = sim1b_boot_stat,
-                               R = 1000, sim = "ordinary", stype = "i", 
-                               augmented = TRUE, lambda = lambda_n, 
+                               R = 1000, sim = "ordinary", stype = "i",
+                               augmented = TRUE, lambda = lambda_n,
                                outcome_type = outcome_type)
   boot_ci_theta_aug <- boot::boot.ci(boot_theta_aug, conf = 0.95, type = "perc")
   if (is.null(boot_ci_theta)) {
@@ -171,7 +171,7 @@ for (i in seq_len(length(countries_of_interest))) {
                    country = country, n_catnap = n_catnap, n_overall = n_overall,
                    augmented = c(FALSE, TRUE),
                    est = c(theta, theta_aug),
-                   ci_ll = cis[, 1], ci_ul = cis[, 2]) %>% 
+                   ci_ll = cis[, 1], ci_ul = cis[, 2]) %>%
       mutate(width = ci_ul - ci_ll)
   )
 }
