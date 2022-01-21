@@ -30,8 +30,10 @@
 \DeclareMathOperator*{\argmin}{argmin}
 \DeclareMathOperator*{\logit}{logit}
 
-\author{Brian Williamson}
-\title{Simulation plan: clinical SLAPNAP manuscript}
+\title{Supplementary Material for \\
+``Super LeArner Prediction of NAb Panels (SLAPNAP) \\ Repository for Combination Monoclonal \\
+Broadly Neutralizing Antibody HIV Prevention Research'', \\
+by B.D. Williamson, L.N. Carpp, S. Karuna, C.A. Magaret, D. Benkeser, and P.B. Gilbert (and others)}
 \date{\today}
 
 \begin{document}
@@ -139,6 +141,24 @@ We then apply a standard Lunn and McNeil test for differential PE at each gp120 
 We also perform a separate 1000 Monte-Carlo replications, generating data according to the same specification as above, and apply a standard Lunn and McNeil test for differential PE at each of the important high-variability sites in $I$ with two-sided level 0.05; we define a detection as the resulting p-value from this test being less than the family-wise error rate multiplicity-adjusted threshold of 0.05, again using a Holm-Bonferroni adjustment. These testing procedures have the opportunity to provide greater power because they adjust for a smaller number of hypothesis tests, if indeed the SLAPNAP PAR score procedure for enriching sites most likely to impact in vivo vaccine efficacy has some predictive power. We compute the power as the Monte-Carlo average number of true detections across the 1000 replications.
 
 Comparing the power of these two approaches (analyze all of gp120, analyze only the important high-variability sites) will provide a useful description of how much SLAPNAP aids in sieve analysis.
+
+\section{Data analysis}
+
+\subsubsection{Country-specific estimation of the mean outcome value}
+When looking to bridge results to new populations, it may be the case that in a specific country (or region), there are far fewer Env sequences with measured neutralization outcomes than the total number of available Env sequences. Based on the hypothesis that SLAPNAP can improve estimation of the mean outcome of interest (tested in the previous simulation), it is possible that SLAPNAP could aid in this setting.
+
+We tested this hypothesis using data from CATNAP and LANL. Specifically, we pulled all Env sequence data from LANL, and pulled all matching Env sequence and neutralization data from CATNAP. Then, for each bnAb regimen considered in Table~\ref{tab:perf}, we looked across the unique countries represented in CATNAP and determined the countries which had greater than 20 sequences with measured IC$_{80}$ against the bnAb regimen of interest. For each of these bnAb regimen and country combinations and for each outcome of interest (IC$_{80}$ and (estimated) sensitivity, defined as IC$_{80} < 1$ for single-bnAbs and estimated IC$_{80} < 1$ for combination regimens), we performed the following procedure:
+\begin{enumerate}
+    \item Subset the LANL and CATNAP data to the country and bnAb regimen of interest;
+    \item Using the SLAPNAP model corresponding to the bnAb of interest, compute PAR scores for each Env sequence in the dataset defined by step (1);
+    \item Denoting the outcome of interest by $Y$, the indicator of whether the sequence had neutralization measured by $R$, and the estimated PAR score by $W$, use the methods outlined above to estimate the mean outcome value both with and without the auxiliary PAR scores;
+    \item Using the percentile bootstrap with 1000 bootstrap replications, compute both a 95\% confidence interval for the mean outcome value both with and without the auxiliary PAR scores and the corresponding width of these intervals.
+    \item Compute relative efficiency as the width of the interval for the mean ignoring the auxiliary PAR scores to the width of the interval for the mean using the auxiliary PAR scores.
+\end{enumerate}
+The results for each country are presented in Table~\ref{tab:include_this}.
+
+To create Figure 4 in the main manuscript, we summarized the results across countries. First, we grouped the countries by similarity in the proportion of sequences from that country with available IC$_{80}$ to the sequences available from that country in LANL; we chose the 33\% and 66\% quantiles of this distribution to create the groups. We then computed the mean relative efficiency within each group, for each bnAb regimen and outcome of interest.
+
 
 % \textcolor{blue}{Brian to Michal: your input would be super helpful on (a) whether the data-generating mechanism above makes sense; and (b) how to define $\beta$ and $\lambda$ such that we get the appropriate null/alternative hypotheses.}
 \end{document}
