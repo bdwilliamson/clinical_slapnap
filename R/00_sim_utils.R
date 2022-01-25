@@ -178,28 +178,24 @@ gen_data_sim2 <- function(n = 1000, J = 100, gamma_0 = rep(runif(100, 0, 0.5)),
     a <- rbinom(n, 1, 0.5)
     n1 <- sum(a == 1)
     n0 <- sum(a == 0)
-    # generate binary resistance profile
-    r <- matrix(NA, nrow = n, ncol = J)
-    r[a == 0, ] <- t(replicate(n0, rbinom(J, 1, gamma_0)))
-    r[a == 1, ] <- t(replicate(n1, rbinom(J, 1, gamma_1)))
-    # generate outcome data according to the model;
-    # assume that PE(resistant) = 0 (i.e., VRC01 doesn't help against resistant viruses)
-    # then among sensitive viruses, PE[j] = PE(overall) / (1 - gamma_0[j])
+    # generate outcome data
     beta <- log(1 - pe_overall)
-    kappa <- vector("numeric", length = J)
-    kappa[positions] <- log(1 - pe_overall / (1 - gamma_0[positions]))
-    r_mat <- sweep(1 - r, 2, kappa, FUN = "*")
-    t <- vector("numeric", length = n)
-    for (i in 1:n) {
-        t[i] <- rexp(1, rate = lambda * exp(beta * a[i] + sum(r_mat[i, ])))
-    }
+    t <- rexp(n, rate = lambda * exp(beta * a))
     # generate censoring data
     cens <- runif(n, min = 0, max = eos / q)
     # final observation time, observed event variables
     obstime <- pmin(t, cens, eos)
     delta <- as.numeric(t <= cens & t <= eos)
-    # set to NA the R's that don't have events
-    r[delta == 0, ] <- NA
+    # generate binary resistance profile
+    r <- matrix(NA, nrow = n, ncol = J)
+    for (j in 1:J) {
+        r[a == 0 & delta == 1, j] <- rbinom(sum(a == 0 & delta == 1), 1, gamma_0[j])
+        if (j %in% positions) {
+            r[a == 1 & delta == 1, j] <- rbinom(sum(a == 1 & delta == 1), 1, gamma_1[j])
+        } else {
+            r[a == 1 & delta == 1, j] <- rbinom(sum(a == 1 & delta == 1), 1, gamma_0[j])    
+        }
+    }
     r_df <- as.data.frame(r)
     # combine
     dat <- data.frame(t = t, c = cens, obstime = obstime, delta = delta, a = a, r_df)

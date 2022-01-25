@@ -33,7 +33,7 @@ J <- 856
 
 # sample proportions of resistant sequences from AMP
 gamma_0 <- rep(.6, J)
-gamma_1 <- rep(.61, J)
+gamma_1 <- rep(.2, J)
 
 # estimated proportion of subjects who were censored in AMP
 q <- 0.1
