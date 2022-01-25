@@ -162,39 +162,60 @@ objective_function <- function(par, gamma, delta) {
 # generate a dataset
 # @param n the sample size
 # @param J the number of AA positions
-# @param gamma the vector of gamma values for the important sites
-# @param delta the treatment effect (log hazard ratio, in isolation from genotype)
+# @param gamma_0 sample proportion of infected subjects in AMP placebo arm with resistant genotype
+# @param gamma_1 sample proportion of infected subjects in AMP VRC01 arm with resistant genotype
+# @param pe_overall the overall prevention efficacy (from AMP)
 # @param lambda the non-genotype-specific event rate
+# @param q the estimated censoring proportion from AMP
 # @param eos end of study time
 # @param positions the truly important positions
 # @return a dataset with outcomes and gp120 AA sites
-gen_data_sim2 <- function(n = 1000, J = 100, gamma, delta = log(1 - .29), lambda = -log(.85)/3,
-                          eos = 3, positions = c(1:26)) {
+gen_data_sim2 <- function(n = 1000, J = 100, gamma_0 = rep(runif(100, 0, 0.5)), 
+                          gamma_1 = rep(runif(100, 0, 0.8)), 
+                          pe_overall = 0.18, lambda = -log(.85)/80,
+                          q = .1, eos = 80, positions = c(1:26)) {
     # generate treatment data
     a <- rbinom(n, 1, 0.5)
     n1 <- sum(a == 1)
     n0 <- sum(a == 0)
-    # generate outcome data according to the model
+    # generate binary resistance profile
+    r <- matrix(NA, nrow = n, ncol = J)
+    r[a == 0, ] <- t(replicate(n0, rbinom(J, 1, gamma_0)))
+    r[a == 1, ] <- t(replicate(n1, rbinom(J, 1, gamma_1)))
+    # generate outcome data according to the model;
+    # assume that PE(resistant) = 0 (i.e., VRC01 doesn't help against resistant viruses)
+    # then among sensitive viruses, PE[j] = PE(overall) / (1 - gamma_0[j])
+    beta <- log(1 - pe_overall)
+    kappa <- vector("numeric", length = J)
+    kappa[positions] <- log(1 - pe_overall / (1 - gamma_0[positions]))
+    r_mat <- sweep(1 - r, 2, kappa, FUN = "*")
     t <- vector("numeric", length = n)
-    t[a == 1] <- rexp(n1, rate = lambda * exp(delta))
-    t[a == 0] <- rexp(n0, rate = lambda)
-    y <- as.numeric(t <= eos)
-    t <- pmin(t, eos)
-    # generate marks
-    v <- matrix(NA, nrow = n, ncol = J)
-    for (j in seq_len(J)) {
-        v[a == 0, j] <- rbinom(n0, 1, gamma)
-        if (j %in% positions) {
-            # alpha <- optim(par = 0, fn = objective_function, method = "L-BFGS-B",
-            #                gamma = gamma[j], delta = delta)$par
-            v[a == 1, j] <- rbinom(n1, 1, gamma[j] * exp((-1)*delta))
-        } else {
-            v[a == 1, j] <- rbinom(n1, 1, gamma[j])
-        }
+    for (i in 1:n) {
+        t[i] <- rexp(1, rate = lambda * exp(beta * a[i] + sum(r_mat[i, ])))
     }
+    # generate censoring data
+    cens <- runif(n, min = 0, max = eos / q)
+    # final observation time, observed event variables
+    obstime <- pmin(t, cens, eos)
+    delta <- as.numeric(t <= cens & t <= eos)
+    # set to NA the R's that don't have events
+    r[delta == 0, ] <- NA
+    r_df <- as.data.frame(r)
     # combine
-    dat <- data.frame(y = y, t = t, a = a, v)
+    dat <- data.frame(t = t, c = cens, obstime = obstime, delta = delta, a = a, r_df)
     return(dat)
+}
+
+# run a Lunn and McNeil test for a given AA position
+# @param dat the dataset
+# @param j the AA position
+one_lm_test <- function(dat, j) {
+    mark <- dat %>% pull(!!paste0("V", j))
+    result <- lunnMcneilTest(flrtime = dat$obstime, 
+                             flrstatus = dat$delta,
+                             flrtype = mark,
+                             Vx = dat$a)
+    return(result$waldtest[3])
 }
 
 # run the procedure once
@@ -208,34 +229,27 @@ gen_data_sim2 <- function(n = 1000, J = 100, gamma, delta = log(1 - .29), lambda
 # @param positions a vector of AA positions to look at for sieve analysis
 ##         (only used in the sieve analysis if site_scanning = FALSE)
 # @return whether or not each important site was truly detected
-run_sim2_once <- function(mc_id = 1, n = 1000, J = 100, gamma, delta = log(1 - .29),
-                          lambda = -log(.85)/3, eos = 3, site_scanning = TRUE,
-                          positions = c(1:26)) {
+run_sim2_once <- function(mc_id = 1, n = 1000, J = 100, gamma_0 = rep(runif(100, 0, 0.5)), 
+                          gamma_1 = rep(runif(100, 0, 0.8)), 
+                          pe_overall = 0.18, lambda = -log(.85)/80,
+                          q = .1, eos = 80, positions = c(1:26), 
+                          site_scanning = TRUE) {
     # generate data
-    dat <- gen_data_sim2(n = n, J = J, gamma = gamma, delta = delta, lambda = lambda,
+    dat <- gen_data_sim2(n = n, J = J, gamma_0 = gamma_0, gamma_1 = gamma_1,
+                         pe_overall = pe_overall, lambda = lambda, q = q,
                          eos = eos, positions = positions)
     # do sieve analysis
     if (site_scanning) {
         # run at each AA position
         all_pvals <- vector("numeric", length = J)
         for (j in seq_len(J)) {
-            this_mark <- dat %>% pull(!!paste0("X", j))
-            this_mark[dat$y == 0] <- NA
-            this_result <- sievePH::sievePH(eventTime = dat$t, eventInd = dat$y,
-                                            mark = this_mark, tx = dat$a)
-            this_summ <- summary(this_result, markGrid = 0)
-            all_pvals[j] <- this_summ$pWald.HRconstant.2sided
+            all_pvals[j] <- one_lm_test(dat = dat, j = j)
         }
     } else {
         # run at only the prespecified positions
         all_pvals <- vector("numeric", length = length(positions))
         for (j in seq_len(length(positions))) {
-            this_mark <- dat %>% pull(!!paste0("X", positions[j]))
-            this_mark[dat$y == 0] <- NA
-            this_result <- sievePH::sievePH(eventTime = dat$t, eventInd = dat$y,
-                                            mark = this_mark, tx = dat$a)
-            this_summ <- summary(this_result, markGrid = 0)
-            all_pvals[j] <- this_summ$pWald.HRconstant.2sided
+            all_pvals[j] <- one_lm_test(dat = dat, j = positions[j])
         }
     }
     adj_p <- p.adjust(all_pvals, method = "holm")

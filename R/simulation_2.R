@@ -5,15 +5,16 @@ library("here")
 library("tidyverse")
 library("data.table")
 library("argparse")
-library("sievePH") # for Lunn and McNeil (1995) method
+library("survival")
 
 source(here("R", "00_sim_utils.R"))
+source(here("R", "lunnMcneil.R"))
 
 # get command-line args --------------------------------------------------------
 # these specify: the number of total replicates, the number of replicates per job
 parser <- ArgumentParser()
 parser$add_argument("--nreps-total", default = 1000, type = "double", help = "the total number of replicates")
-parser$add_argument("--nreps-per-job", default = 1000, type = "double", help = "the total number of replicates per job")
+parser$add_argument("--nreps-per-job", default = 10, type = "double", help = "the total number of replicates per job")
 parser$add_argument("--output-dir", default = here::here("R_output", "simulation_1"), help = "the output directory")
 args <- parser$parse_args()
 
@@ -30,11 +31,20 @@ nreps_per_combo <- args$nreps_total / args$nreps_per_job
 positions <- c(60, 142, 144, 147, 156, 170, 229, 230, 234, 279, 280, 317, 365, 429, 456, 458, 459, 471, 616, 824)
 J <- 856
 
-# read in the gamma values
-gamma <- rep(.2, J)
+# sample proportions of resistant sequences from AMP
+gamma_0 <- rep(.6, J)
+gamma_1 <- rep(.61, J)
 
-# sample size
-ns <- c(1e3, 5e3, 10e3, 30e3)
+# estimated proportion of subjects who were censored in AMP
+q <- 0.1
+eos <- 80
+
+# effect: for overall PE of 0.18, PE(overall) = 1 - exp(beta)
+lambda <- -log(.85)/eos
+pe_overall <- 0.18
+
+# sample size (same as AMP)
+ns <- 2699 + 1924
 
 # set up the other simulation parameters
 analyses <- c("site-scanning", "priority")
@@ -48,8 +58,9 @@ print(current_seed)
 set.seed(current_seed)
 output_lst <- lapply(as.list(1:args$nreps_per_job), function(i) {
   run_sim2_once(mc_id = i + args$nreps_per_job * (current_dynamic_args$mc_id - 1),
-                n = current_dynamic_args$n, J = J, gamma = gamma, delta = 1 - log(.29),
-                lambda = -log(.85)/3, eos = 3, site_scanning = (current_dynamic_args$analysis == "site-scanning"),
+                n = current_dynamic_args$n, J = J, gamma_0 = gamma_0, 
+                gamma_1 = gamma_1, pe_overall = pe_overall, lambda = lambda, eos = eos, 
+                site_scanning = (current_dynamic_args$analysis == "site-scanning"),
                 positions = positions)
 })
 output <- tibble::as_tibble(data.table::rbindlist(output_lst))

@@ -74,17 +74,6 @@ full_plot <- plot_grid(
   lgnd, nrow = 1, ncol = 3, rel_widths = c(.05, 1, .6)
 )
 
-# rel_eff_plot <- mc_vars %>%
-#   ggplot(aes(x = pred_perf, y = relative_efficiency, color = bnab)) +
-#   geom_point() +
-#   geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
-#   labs(y = "Relative Efficiency (ignoring vs using auxiliary sequences)",
-#        x = "Prediction Performance", color = "bnAb") +
-#   scale_x_continuous(sec.axis = sec_axis(~ ., name = "Percentage Increase in Available Viruses",
-#                      breaks = NULL, labels = NULL)) +
-#   facet_grid(rows = vars(outcome), cols = vars(percentage), labeller = label_both,
-#              scales = "free")
-
 ggsave(filename = here::here("R_output", "sim_1_rel_eff.png"),
        plot = full_plot, 
        width = 9, height = 5, units = "in")
