@@ -205,13 +205,23 @@ gen_data_sim2 <- function(n = 1000, J = 100, gamma_0 = rep(runif(100, 0, 0.5)),
 # run a Lunn and McNeil test for a given AA position
 # @param dat the dataset
 # @param j the AA position
-one_lm_test <- function(dat, j) {
+one_lm_test <- function(dat, j, estimator = "sievePH") {
     mark <- dat %>% pull(!!paste0("V", j))
-    result <- lunnMcneilTest(flrtime = dat$obstime, 
-                             flrstatus = dat$delta,
-                             flrtype = mark,
-                             Vx = dat$a)
-    return(result$waldtest[3])
+    if (estimator == "sievePH") {
+        result <- sievePH::sievePH(eventTime = dat$obstime,
+                                   eventInd = dat$delta,
+                                   mark = mark,
+                                   tx = dat$a)
+        summ <- summary(result, markGrid = c(0, 1))
+        pval <- summ$pWald.HRunity.2sided   
+    } else {
+        result <- lunnMcneilTest(flrtime = dat$obstime,
+                                 flrstatus = dat$delta,
+                                 flrtype = mark,
+                                 Vx = dat$a)
+        pval <- result$waldtest[3]
+    }
+    return(pval)
 }
 
 # run the procedure once
@@ -223,13 +233,15 @@ one_lm_test <- function(dat, j) {
 # @param eos end of study time
 # @param site_scanning should we look at all sites (TRUE) or the sites specified in 'positions' (FALSE)?
 # @param positions a vector of AA positions to look at for sieve analysis
-##         (only used in the sieve analysis if site_scanning = FALSE)
+#          (only used in the sieve analysis if site_scanning = FALSE)
+# @param estimator the code used to estimate sieve effects p-value
 # @return whether or not each important site was truly detected
 run_sim2_once <- function(mc_id = 1, n = 1000, J = 100, gamma_0 = rep(runif(100, 0, 0.5)), 
                           gamma_1 = rep(runif(100, 0, 0.8)), 
                           pe_overall = 0.18, lambda = -log(.85)/80,
                           q = .1, eos = 80, positions = c(1:26), 
-                          site_scanning = TRUE) {
+                          site_scanning = TRUE,
+                          estimator = "sievePH") {
     # generate data
     dat <- gen_data_sim2(n = n, J = J, gamma_0 = gamma_0, gamma_1 = gamma_1,
                          pe_overall = pe_overall, lambda = lambda, q = q,
@@ -239,13 +251,13 @@ run_sim2_once <- function(mc_id = 1, n = 1000, J = 100, gamma_0 = rep(runif(100,
         # run at each AA position
         all_pvals <- vector("numeric", length = J)
         for (j in seq_len(J)) {
-            all_pvals[j] <- one_lm_test(dat = dat, j = j)
+            all_pvals[j] <- one_lm_test(dat = dat, j = j, estimator = estimator)
         }
     } else {
         # run at only the prespecified positions
         all_pvals <- vector("numeric", length = length(positions))
         for (j in seq_len(length(positions))) {
-            all_pvals[j] <- one_lm_test(dat = dat, j = positions[j])
+            all_pvals[j] <- one_lm_test(dat = dat, j = positions[j], estimator = estimator)
         }
     }
     adj_p <- p.adjust(all_pvals, method = "holm")
@@ -255,6 +267,7 @@ run_sim2_once <- function(mc_id = 1, n = 1000, J = 100, gamma_0 = rep(runif(100,
         ret_p <- adj_p
     }
     ret <- tibble::tibble(mc_id = mc_id, n = n, analysis = ifelse(site_scanning, "Site-scanning", "Priority"),
-                          position = positions, p_val = ret_p, reject = ret_p < 0.05)
+                          estimator = estimator, position = positions, p_val = ret_p, 
+                          reject = ret_p < 0.05)
     return(ret)
 }

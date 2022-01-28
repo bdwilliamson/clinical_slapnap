@@ -6,6 +6,7 @@ library("tidyverse")
 library("data.table")
 library("argparse")
 library("survival")
+library("sievePH")
 
 source(here("R", "00_sim_utils.R"))
 source(here("R", "lunnMcneil.R"))
@@ -33,7 +34,7 @@ J <- 856
 
 # sample proportions of resistant sequences from AMP
 gamma_0 <- rep(.6, J)
-gamma_1 <- rep(.2, J)
+gamma_1 <- rep(.5, J)
 
 # estimated proportion of subjects who were censored in AMP
 q <- 0.1
@@ -47,10 +48,11 @@ pe_overall <- 0.18
 ns <- 2699 + 1924
 
 # set up the other simulation parameters
-analyses <- c("site-scanning", "priority")
+analyses <- c("priority", "site-scanning")
 param_grid <- expand.grid(mc_id = seq_len(nreps_per_combo), n = ns, analysis = analyses)
 current_dynamic_args <- param_grid[job_id, ]
-print(paste0("Running n = ", current_dynamic_args$n, " for the ", current_dynamic_args$analysis, " analysis"))
+print(paste0("Running n = ", current_dynamic_args$n, 
+             " for the ", current_dynamic_args$analysis, " analysis"))
 
 # run the simulation -----------------------------------------------------------
 current_seed <- job_id + current_dynamic_args$n + as.numeric(current_dynamic_args$analysis == "site-scanning") * 1e4
@@ -61,7 +63,7 @@ output_lst <- lapply(as.list(1:args$nreps_per_job), function(i) {
                 n = current_dynamic_args$n, J = J, gamma_0 = gamma_0, 
                 gamma_1 = gamma_1, pe_overall = pe_overall, lambda = lambda, eos = eos, 
                 site_scanning = (current_dynamic_args$analysis == "site-scanning"),
-                positions = positions)
+                positions = positions, estimator = "sievePH")
 })
 output <- tibble::as_tibble(data.table::rbindlist(output_lst))
 saveRDS(output, file = paste0(args$output_dir, "/output_", job_id, ".rds"))
