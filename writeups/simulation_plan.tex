@@ -71,7 +71,7 @@ For each random dataset, our goal is to estimate the mean value of $Y$, $\theta 
 \end{align*}
 We estimate $E(Y \mid W_i)$ using ordinary least squares -- denoting our estimator as $g_n: w \mapsto g_n(w)$ -- and then can use the estimating equation above to obtain an estimator of $\theta$. In our case, a consistent estimator of $\lambda$ is $\lambda_{n,i} = n / \{(1 + \epsilon)n\}$ for all $i$. In this special case, a closed form solution for $\theta$ exists:
 \begin{align*}
-    \theta_n = \frac{1}{n\lambda_n}\sum_{i=1}^nR_i(Y_i - g_n(W_i)) + \frac{1}{n}\sum_{i=1}^n g_n(W_i)
+    \theta_n = \frac{1}{n\lambda}\sum_{i=1}^nR_i(Y_i - g_n(W_i)) + \frac{1}{n}\sum_{i=1}^n g_n(W_i)
 \end{align*}
  We obtain two estimators, $\theta_{n,1}$ and $\theta_{n,2}$, corresponding to using only the data with observed outcome (i.e., $R_i = 1$) and using the additional data, respectively.
 
@@ -115,30 +115,104 @@ For each random dataset, our goal is now to estimate $\theta = E(Y) = P(\text{IC
 
 \subsection{Sieve analysis}
 
-The goal of this simulation is to see if SLAPNAP improves sieve analysis; in particular, we want to see if using SLAPNAP results in improved power for detecting sieve effects. For simplicity, we will focus on VRC01 only for this simulation, and consider an AMP-like design with only the high-dose arm.
+The goal of this simulation is to see if SLAPNAP improves sieve analysis; in particular, we want to see if using SLAPNAP results in improved power for detecting sieve effects. For simplicity, we will use VRC01 to define residues that are sensitive or resistant for this simulation, and consider an AMP-like design with only the high-dose arm. In this simulation, we assume that we are using data from a trial assessing the prevention efficacy of a combination bnAb regimen $R$ (involving a VRC01-type bnAb) that is expected to have higher prevention efficacy than that observed in AMP.
 
-We will use Cox modeling (Lunn and McNeil, 1995; implemented in the \texttt{R} package \texttt{sievePH}) to estimate differential prevention efficacy by `putative resistant' genotype versus `other genotype' for each of the 26 positions in gp120 identified as important for the AMP sieve analysis with enough variability in the AMP data, defined by at least 4 primary endpoint cases having a sequence with a minority residu at the given position (harmonized with the AMP sieve analysis). We denote the sites that pass the variability threshold by $\{H_j: j \in I\}$, where $\lvert I \rvert \leq 26$.
-
-Next, we define the alternative hypotheses for sieve effects at each site. We assume an overall prevention efficacy of 29\% (as identified in AMP, for the high-dose VRC01 group pooled across trials), i.e., set $PE(\text{overall}) = 0.29$. We also assume $PE(\text{putative resistant genotype at site } H_j) = 0$ for all $j$. Then for each site $H_1,\ldots,H_I$, we set
-\begin{align*}
-    PE(\text{overall}) = \gamma_j PE(\text{putative resistant genotype at site } H_j) + (1 - \gamma_j)PE(\text{other genotype at site } H_j),
-\end{align*}
-where $\gamma_j$ is the fraction of placebo-arm AMP viruses that have the putative resistant genotype at site $j$. This allows us to determine the alternative hypothesis for each site. For all other gp120 sites (suppose there are $J$ total sites), we assume the null hypothesis $PE(\text{putative resistant genotype at site } H_j) = PE(\text{other genotype at site } H_j)$. We compute each $\gamma$ using the AMP data.
-
-For each of 1000 Monte-Carlo replications, we generate data according to the following specification: $n$ independent observations of
+Suppose that we randomly assign patients to placebo or the combination regimen $R$, letting $A \in \{0,1\}$ denote the treatment assignment (0 = placebo, 1 = assignment to $R$). Suppose further that each participant in the trial has an underlying time to HIV-1 infection (denoted by $T$), and a corresponding genotype for the infecting HIV-1 virus. We let $S = (S_1, \ldots, S_J)$ denote a binary indicator vector, where $S_j$ is the indicator that the Env sequence has the putative sensitive residue present at amino acid (AA) position $j$ in the Env protein, and $J$ is the number of HXB2 positions in the Env protein that exhibit sufficient residue variability. We define sufficient residue variability at a given position by at least 4 primary endpoint cases from AMP having a sequence with a minority residue at that position (harmonized with the AMP sieve analysis). Based on AMP, there are XX AA sites that exhibit sufficient variability (i.e., $J = XX$) (\textcolor{blue}{XX: forthcoming from Craig based on the AMP data}). More specifically, we assume that
 \begin{align*}
   A \sim & \ Bern(0.5) \\
-  R_j \sim & \ Bern(\gamma_j) \text{ for } j = 1, \ldots, J \\
-  T \mid A = a, R = r \sim & \ Exp(\lambda\text{exp}(\beta \begin{bmatrix}a & r \end{bmatrix})) \\
-  C =& \ c \\
-  Y =& \ I(T \leq C),
+  S_j \sim & \ Bern(\gamma_{0,j}) \text{ for } j \in \{1, \ldots, J\}.
 \end{align*}
-where $A$ denotes assignment to VRC01 ($A = 1$) or placebo, $R_j$ denotes the binary `mark' that site $j$ has the putative resistant genotype, $R$ denotes the full vector marks at each of the $J$ AA positions, $T$ denotes the HIV infection time, $C$ denotes the censoring time (and $c$ denotes study end), and $Y$ denotes the indicator that we have observed an HIV infection event before the end of the study.
-We then apply a standard Lunn and McNeil test for differential PE at each gp120 site $j = 1, \ldots, J$ with two-sided level 0.05; we define a detection as the resulting p-value from this test being less than the family-wise error rate using a multiplicity-adjusted threshold of 0.05, implemented using a Holm-Bonferroni adjustment. We compute the power as the Monte-Carlo average number of true detections.
+We assume here that $S_1, \ldots, S_J$ are mutually independent; while this is not true in general due to covariability of AA positions, this fact does not impact the simulation design, as we make clear below. In Table~\ref{tab:sens}, we list positions in the Env gp120 region identified as important for the AMP sieve analysis with enough variability in the AMP data, along with the corresponding sensitive genotype (residue). We define $\gamma_{0,j}$ to be the proportion of AMP placebo-arm participants with the putative sensitive residue at AA position $j$. Table~\ref{tab:sens} contains the values of $\gamma_{0,j}$ for the pre-identified positions. For positions in gp120 outside of this list of pre-identified positions, we selected a `putative sensitive residue' by identifying the residue observed to be most frequent among VRC01-sensitive viruses vs. VRC01-resistant viruses in CATNAP, and then defined the corresponding $\gamma_{0,j}$ as the proportion of this residue among AMP placebo-arm participants.
 
-We also perform a separate 1000 Monte-Carlo replications, generating data according to the same specification as above, and apply a standard Lunn and McNeil test for differential PE at each of the important high-variability sites in $I$ with two-sided level 0.05; we define a detection as the resulting p-value from this test being less than the family-wise error rate multiplicity-adjusted threshold of 0.05, again using a Holm-Bonferroni adjustment. These testing procedures have the opportunity to provide greater power because they adjust for a smaller number of hypothesis tests, if indeed the SLAPNAP PAR score procedure for enriching sites most likely to impact in vivo vaccine efficacy has some predictive power. We compute the power as the Monte-Carlo average number of true detections across the 1000 replications.
+\begin{table}
+  \caption{HXB2-reference position in HIV-1 Env gp120 identified as being important for predicting sensitivity to VRC01, along with the putative sensitive residue at the given position and the proportion of AMP trial placebo arm participants with the putative sensitive residue at the position.}
+  \label{tab:sens}
+  \begin{tabular}{lll}
+    HXB2 position & Putative sensitive residue & Prop. AMP placebo participants with sensitive residue ($\gamma_{0,j}$)\\
+    \hline
+    60 & A & 0.852 \\
+    142 & T & 0.173 \\
+    144 & N & 0.098 \\
+    147 & T & 0.024 \\
+    170 & Q & 0.198 \\
+    230 & not D & 0.556 \\
+    279 & N & 0.383 \\
+    280 & N & 0.975 \\
+    317 & F & 0.840 \\
+    365 & S & 0.815 \\
+    429 & E & 0.506 \\
+    456 & R & 0.963 \\
+    458 & G & 1 \\
+    459 & G & 0.951 \\
+    471 & G & 0.580 \\
+  \end{tabular}
+\end{table}
 
-Comparing the power of these two approaches (analyze all of gp120, analyze only the important high-variability sites) will provide a useful description of how much SLAPNAP aids in sieve analysis.
+We assume that $R$ has an overall prevention efficacy of 0.7. We further assume that for the positions given in Table~\ref{tab:sens}, there may be greater prevention efficacy of $R$ against viruses with a putative sensitive residue at a given position than against viruses with another residue at the given position. This latter assumption can be formalized using the language of sieve analysis. We define a sieve effect at AA position $j$ as differential prevention efficacy at that position; more specifically, we conduct a hypothesis test of
+\begin{align*}
+  H_0: PE(S_j = 1) = PE(S_j = 0) \text{ versus } H_1: PE(S_j = 1) \neq PE(S_j = 0).
+\end{align*}
+For each position $j$, we define the overall PE as a function of the PE of a sensitive and other genotype at position $j$, i.e.,
+\begin{align*}
+  \log \{1 - PE(\text{overall})\} =& \ \gamma_{0,j} \log \{1 - PE(S_j = 1)\} + (1 - \gamma_{0,j}) \log \{1 - PE(S_j = 0)\}.
+\end{align*}
+To simplify the simulation, we assume absence of sieve effects at all AA positions except for AA position 230. This position was observed to have a sieve effect with respect to VRC01 in one of the AMP trials (HVTN 704 / HPTN 085), where the presence of residue D at position 230 was found to be resistant (estimated 64\% PE based on \emph{not} residue D at 230 vs. estimated -24\% PE based on residue D at 230). We assume that $PE(S_{230} = 0) = 0$. Based on the above formula, this yields $PE(S_{230} = 1) \approx 0.89$.
 
-% \textcolor{blue}{Brian to Michal: your input would be super helpful on (a) whether the data-generating mechanism above makes sense; and (b) how to define $\beta$ and $\lambda$ such that we get the appropriate null/alternative hypotheses.}
+Based on this, we can define a vector of sieve effect parameters $\alpha$, where we define $\alpha_{230} = \log(1 - 0.89) - \log(1 - 0) \approx -2.21$, and for all other positions $\{j \in \{1, \ldots, J\}: j \neq 230\}$ we define $\alpha_j = 0$. Then we define the following HIV-1 infection time and censoring processes:
+\begin{align*}
+  T \mid A = a, S_{230} = s \sim & \ Exp[\lambda\text{exp}\{s \log \gamma_{0,230} + (a \times s) \alpha\}] \\
+  C \sim & \ Unif(0, c) \\
+  \Delta =& \ I(T \leq C \ \& \ T \leq \text{24 months}) \\
+  Y =& \ \Delta T + (1 - \Delta) \min\{C, 24 months\} \\
+  V =& \ \Delta S_{230},
+\end{align*}
+where $T$ denotes the latent HIV infection time; $C$ denotes the censoring time, which is independent of $T$; $\Delta$ denotes the indicator that we have observed an HIV infection event before the end of the study (at 24 months for primary outcome adjudication) or censoring; $Y$ denotes the observation time; and $V$ denotes the observed ``mark'', i.e., the presence of a sensitive residue at a given site. Note that in participants for whom we observe $\Delta = 0$, i.e., the participant does not acquire HIV-1 infection, $Y$ is the minimum of the censoring time and the end of the study and $V$ is missing. We further note that the model for $T$ implies the following hazards (with $h_j(a)$ denoting the cause-specific hazard of infection with genotype $j$ for $S_{230} = j$ in arm $A = a$):
+\begin{align*}
+  h_0(A = 0) =& \ \lambda \\
+  h_1(A = 0) =& \ \lambda \gamma_{0,230} \\
+  h_0(A = 1) =& \ \lambda \\
+  h_1(A = 1) =& \ \lambda \gamma_{0,230} \{1 - PE(S_{230})\},
+\end{align*}
+which aligns precisely with our assumptions above that prevention efficacy based on the resistant genotype at 230 is zero.
+
+Finally, we set the parameters $c$ and $\lambda$. We set assume a yearly censoring rate of 10\%, implying that $c = (365 \times 2) / 0.1$. We assume three different baseline hazards among those with $S_{230} = 0$: $\lambda \in \{.037, .018, .006\}$, corresponding to three different incidence rates (Gilbert, 2019). In each of the three settings, the baseline hazard has been calibrated so that we expect to see approximately 88 HIV-1 infections over the 24-month followup period, in line with Gilbert (2019). These baseline hazards imply sample sizes $n \in \{2071, 4141, 12422\}$ (see Table 2 in Gilbert, 2019).
+
+We will use Cox modeling (Lunn and McNeil, 1995; implemented in the \texttt{R} function \texttt{lunnMcneilTest} provided by Michal Juraska) to estimate differential prevention efficacy. For each of 1000 Monte-Carlo replications, we generate data according to the following specification. We first generate $n$ independent observations of
+\begin{align*}
+  A \sim & \ Bern(0.5) \\
+  S_j \sim & \ Bern(\gamma_{0,j}) \text{ for } j \in \{1, \ldots, J\} \text{ mutually independent} \\
+  C \sim & \ Unif(0, c).
+\end{align*}
+For participants in the placebo arm, we further generate
+\begin{align*}
+  T \mid A = 0, S_{230} = 0 \sim & \ Exp(\lambda) \text{ and }\\
+  T \mid A = 0, S_{230} = 1 \sim & \ Exp(\lambda \gamma_{0,230});
+\end{align*}
+for participants in the intervention arm, we generate
+\begin{align*}
+  T \mid A = 1, S = 0 \sim & \ Exp(\lambda) \text{ and }\\
+  T \mid A = 1, S = 1 \sim & \ Exp(\lambda\exp(\log \gamma_{0,j} + \alpha)).
+\end{align*}
+We then set $\Delta = I(T \leq C \ \& \ T \leq \text{ 24 months})$, $Y = \Delta T + (1 - \Delta) \min\{C, 24 \text{ months}\}$, and $V = \Delta S$, where again if $\Delta = 0$ then $V$ is missing.
+
+For a given dataset, we consider two different sieve analysis strategies. The first is to apply a standard Lunn and McNeil test for differential PE at each Env gp120 site with sufficient variability $j = 1, \ldots, J$ with two-sided level 0.05; we define a detection as the resulting p-value from this test being less than the family-wise error rate using a multiplicity-adjusted threshold of 0.05, implemented using a Holm-Bonferroni adjustment. We call this a ``site-scanning'' sieve analysis. The second is a ``priority'' sieve analysis, where we apply a standard Lunn and McNeil test for differential PE at each of the important high-variability sites listed in Table~\ref{tab:sens}, and define a detection as the resulting p-value from this test being less than the family-wise error rate multiplicity-adjusted threshold of 0.05, again using a Holm-Bonferroni adjustment.
+
+The priority sieve analysis has the opportunity to provide greater power because they adjust for a smaller number of hypothesis tests, if indeed the SLAPNAP procedure for identifying sites most likely to impact in vivo vaccine efficacy has some predictive power. We compute the power as the Monte-Carlo average number of true detections across the 1000 replications. We repeat the process of generating 1000 Monte-Carlo replications for each assumed baseline hazard and corresponding sample size. Comparing the power of the site-scanning approach to the priority approach will provide a useful description of how much SLAPNAP aids in sieve analysis.
+
+To better understand power as a function of the effect size, we also generate data under several different hypothesized values of $PE(S_{230} = 0)$. The corresponding parameter values used in the simulations are provided in Table~\ref{tab:effect_size}.
+
+\begin{table}
+  \centering
+  \caption{Values of $PE(S_{230} = 1)$ and the corresponding parameter $\alpha$ based on differing values of $PE(S_{230} = 0)$.}
+  \label{tab:effect_size}
+  \begin{tabular}{lll}
+    $PE(S_{230} = 0)$ & $PE(S_{230} = 1)$ & $\alpha_{230}$ \\
+    \hline
+    0 & 0.89 & -2.21 \\
+    0.1 & 0.88 & -2.01 \\
+    0.2 & 0.86 & -1.74\\
+    0.3 & 0.85 & -1.54
+  \end{tabular}
+\end{table}
+
 \end{document}
