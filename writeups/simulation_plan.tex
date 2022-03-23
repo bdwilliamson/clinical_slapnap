@@ -158,42 +158,41 @@ For each position $j$, we define the overall PE as a function of the PE of a sen
 \end{align*}
 To simplify the simulation, we assume absence of sieve effects at all AA positions except for AA position 230. This position was observed to have a sieve effect with respect to VRC01 in one of the AMP trials (HVTN 704 / HPTN 085), where the presence of residue D at position 230 was found to be resistant (estimated 64\% PE based on \emph{not} residue D at 230 vs. estimated -24\% PE based on residue D at 230). We assume that $PE(S_{230} = 0) = 0$. Based on the above formula, this yields $PE(S_{230} = 1) \approx 0.89$.
 
-Based on this, we can define a vector of sieve effect parameters $\alpha$, where we define $\alpha_{230} = \log(1 - 0.89) - \log(1 - 0) \approx -2.21$, and for all other positions $\{j \in \{1, \ldots, J\}: j \neq 230\}$ we define $\alpha_j = 0$. Then we define the following HIV-1 infection time and censoring processes:
+Based on this, we can define a vector of sieve effect parameters $\alpha$, where we define $\alpha_{230} = \log(1 - 0.89) - \log(1 - 0) \approx -2.21$, and for all other positions $\{j \in \{1, \ldots, J\}: j \neq 230\}$ we define $\alpha_j = 0$. We let $T_0$ and $T_1$ denote the latent cause-specific time to infection with a virus with $S_{230} = 0$ and $S_{230} = 1$, respectively, and let $T$ denote the latent infection time with $T = \min \{T_0, T_1\}$. More specifically, we model the latent cause-specific infection times as
 \begin{align*}
-  T \mid A = a, S_{230} = s \sim & \ Exp[\lambda\text{exp}\{s \log \gamma_{0,230} + (a \times s) \alpha\}] \\
+  T_0 \mid A = a \sim & \ Exp(\lambda) \\
+  T_1 \mid A = a \sim & \ Exp\{\lambda\exp(\log \gamma_{0,230} + a \alpha)\} \\
+  T =& \ \min\{T_0, T_1\}.
+\end{align*}
+Based on our assumption of zero PE against viruses with $S_{230} = 0$, under the above model for the latent infection times we can write the following hazards (with $h_j(a)$ denoting the cause-specific hazard of infection with genotype $j$ for $S_{230} = j$ in arm $A = a$):
+\begin{align*}
+  h_0(A = 0) =& \ \lambda \\
+  h_1(A = 0) =& \ \lambda \gamma_{0,230} \\
+  h_0(A = 1) =& \ \lambda \\
+  h_1(A = 1) =& \ \lambda \gamma_{0,230} \{1 - PE(S_{230})\}.
+\end{align*}
+which aligns precisely with our assumptions above that prevention efficacy based on the resistant genotype at 230 is zero. We assume three different baseline hazards among those with $S_{230} = 0$: $\lambda \in \{.037, .018, .006\}$, corresponding to three different incidence rates (Gilbert, 2019). In each of the three settings, the baseline hazard has been calibrated so that we expect to see approximately 88 HIV-1 infections over the 24-month followup period, in line with Gilbert (2019). These baseline hazards imply sample sizes $n \in \{2071, 4141, 12422\}$ (see Table 2 in Gilbert, 2019).
+
+Then we define the following censoring and observation processes:
+\begin{align*}
   C \sim & \ Unif(0, c) \\
   \Delta =& \ I(T \leq C \ \& \ T \leq \text{24 months}) \\
   Y =& \ \Delta T + (1 - \Delta) \min\{C, 24 months\} \\
   V =& \ \Delta S_{230},
 \end{align*}
-where $T$ denotes the latent HIV infection time; $C$ denotes the censoring time, which is independent of $T$; $\Delta$ denotes the indicator that we have observed an HIV infection event before the end of the study (at 24 months for primary outcome adjudication) or censoring; $Y$ denotes the observation time; and $V$ denotes the observed ``mark'', i.e., the presence of a sensitive residue at a given site. Note that in participants for whom we observe $\Delta = 0$, i.e., the participant does not acquire HIV-1 infection, $Y$ is the minimum of the censoring time and the end of the study and $V$ is missing. We further note that the model for $T$ implies the following hazards (with $h_j(a)$ denoting the cause-specific hazard of infection with genotype $j$ for $S_{230} = j$ in arm $A = a$):
-\begin{align*}
-  h_0(A = 0) =& \ \lambda \\
-  h_1(A = 0) =& \ \lambda \gamma_{0,230} \\
-  h_0(A = 1) =& \ \lambda \\
-  h_1(A = 1) =& \ \lambda \gamma_{0,230} \{1 - PE(S_{230})\},
-\end{align*}
-which aligns precisely with our assumptions above that prevention efficacy based on the resistant genotype at 230 is zero.
+where $C$ denotes the censoring time, which is independent of $T$; $\Delta$ denotes the indicator that we have observed an HIV infection event before the end of the study (at 24 months for primary outcome adjudication) or censoring; $Y$ denotes the observation time; and $V$ denotes the observed ``mark'', i.e., the presence of a sensitive residue at a given site. Note that in participants for whom we observe $\Delta = 0$, i.e., the participant does not acquire HIV-1 infection, $Y$ is the minimum of the censoring time and the end of the study and $V$ is missing. We set assume a yearly censoring rate of 10\%, implying that $c = (365 \times 2) / 0.1$.
 
-Finally, we set the parameters $c$ and $\lambda$. We set assume a yearly censoring rate of 10\%, implying that $c = (365 \times 2) / 0.1$. We assume three different baseline hazards among those with $S_{230} = 0$: $\lambda \in \{.037, .018, .006\}$, corresponding to three different incidence rates (Gilbert, 2019). In each of the three settings, the baseline hazard has been calibrated so that we expect to see approximately 88 HIV-1 infections over the 24-month followup period, in line with Gilbert (2019). These baseline hazards imply sample sizes $n \in \{2071, 4141, 12422\}$ (see Table 2 in Gilbert, 2019).
-
-We will use Cox modeling (Lunn and McNeil, 1995; implemented in the \texttt{R} function \texttt{lunnMcneilTest} provided by Michal Juraska) to estimate differential prevention efficacy. For each of 1000 Monte-Carlo replications, we generate data according to the following specification. We first generate $n$ independent observations of
+We will use Cox modeling (Lunn and McNeil, 1995; implemented in the \texttt{R} function \texttt{lunnMcneilTest} provided by Michal Juraska) to estimate differential prevention efficacy. For each of 1000 Monte-Carlo replications, we generate data according to the following specification. For a given baseline hazard $\lambda$ and corresponding sample size $n$, we first generate $n$ independent observations of
 \begin{align*}
   A \sim & \ Bern(0.5) \\
-  S_j \sim & \ Bern(\gamma_{0,j}) \text{ for } j \in \{1, \ldots, J\} \text{ mutually independent} \\
+  T_0 \sim & \ Exp(\lambda) \\
+  T_1 \sim & \ Exp\{\lambda\exp(\log \gamma_{0,230} + a \alpha)\} \\
+  T =& \ \min\{T_0, T_1\} \\
+  S_{230} =& \ I\{T = T_1\} \\
+  S_j \sim & \ Bern(\gamma_{0,j}) \text{ for } j \in \{1, \ldots, J\} \setminus \{230\} \text{ mutually independent} \\
   C \sim & \ Unif(0, c).
 \end{align*}
-For participants in the placebo arm, we further generate
-\begin{align*}
-  T \mid A = 0, S_{230} = 0 \sim & \ Exp(\lambda) \text{ and }\\
-  T \mid A = 0, S_{230} = 1 \sim & \ Exp(\lambda \gamma_{0,230});
-\end{align*}
-for participants in the intervention arm, we generate
-\begin{align*}
-  T \mid A = 1, S = 0 \sim & \ Exp(\lambda) \text{ and }\\
-  T \mid A = 1, S = 1 \sim & \ Exp(\lambda\exp(\log \gamma_{0,j} + \alpha)).
-\end{align*}
-We then set $\Delta = I(T \leq C \ \& \ T \leq \text{ 24 months})$, $Y = \Delta T + (1 - \Delta) \min\{C, 24 \text{ months}\}$, and $V = \Delta S$, where again if $\Delta = 0$ then $V$ is missing.
+We then set $\Delta = I(T \leq C \ \& \ T \leq \text{ 24 months})$, $Y = \Delta T + (1 - \Delta) \min\{C, 24 \text{ months}\}$, and $V = \Delta S_{230}$, where again if $\Delta = 0$ then $V$ is missing.
 
 For a given dataset, we consider two different sieve analysis strategies. The first is to apply a standard Lunn and McNeil test for differential PE at each Env gp120 site with sufficient variability $j = 1, \ldots, J$ with two-sided level 0.05; we define a detection as the resulting p-value from this test being less than the family-wise error rate using a multiplicity-adjusted threshold of 0.05, implemented using a Holm-Bonferroni adjustment. We call this a ``site-scanning'' sieve analysis. The second is a ``priority'' sieve analysis, where we apply a standard Lunn and McNeil test for differential PE at each of the important high-variability sites listed in Table~\ref{tab:sens}, and define a detection as the resulting p-value from this test being less than the family-wise error rate multiplicity-adjusted threshold of 0.05, again using a Holm-Bonferroni adjustment.
 
