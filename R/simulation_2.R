@@ -21,7 +21,7 @@ parser$add_argument("--output-dir", default = here::here("R_output", "simulation
 args <- parser$parse_args()
 
 if (!is.na(Sys.getenv("RSTUDIO", unset = NA))) {
-  job_id <- 3001 # n = 2071, priority
+  job_id <- 1 # n = 2071, priority
   # job_id <- 4001 # n = 4141, priority
   # job_id <- 5001 # n = 12422, priority
 } else {
@@ -92,7 +92,7 @@ system.time(
                   eos = 365 * 2, q = q,
                   site_scanning = (args$analysis == "site-scanning"),
                   positions = positions, position = which(gammas$pos == 230),
-                  minvar_screen = 0)
+                  minvar_screen = 0, pe_0 = current_dynamic_args$pe_0)
   })
 )
 output <- tibble::as_tibble(data.table::rbindlist(output_lst))

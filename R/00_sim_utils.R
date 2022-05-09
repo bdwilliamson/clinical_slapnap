@@ -263,7 +263,7 @@ lunn_mcneil_pval <- function(dat, mark, package = "sievePH") {
 # @return whether or not each important site was truly detected
 run_sim2_once <- function(mc_id = 1, n = 1000, all_positions = 1:100, gammas,
                           lambda_0 = 3.04, beta = log(1 - 0.18), alpha = rep(log(1 - 0.95) - log(1 - 0.18), 100),
-                          q = 769 / 4611, eos = 365 * 2, site_scanning = TRUE,
+                          q = 769 / 4611, eos = 365 * 2, site_scanning = TRUE, pe_0 = 0,
                           positions = c(1:26), position = 1,
                           minvar_screen = 10, debug = FALSE) {
     # generate data
@@ -325,6 +325,7 @@ run_sim2_once <- function(mc_id = 1, n = 1000, all_positions = 1:100, gammas,
         ret_p <- adj_p[positions == 230]
     }
     ret <- tibble::tibble(mc_id = mc_id, n = n, analysis = ifelse(site_scanning, "Site-scanning", "Priority"),
+                          pe_0 = pe_0,
                           position = 230, p_val = ret_p, reject = ret_p < 0.05)
     return(ret)
 }
