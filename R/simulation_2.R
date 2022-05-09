@@ -20,7 +20,9 @@ parser$add_argument("--output-dir", default = here::here("R_output", "simulation
 args <- parser$parse_args()
 
 if (!is.na(Sys.getenv("RSTUDIO", unset = NA))) {
-  job_id <- 3001
+  job_id <- 3001 # n = 2071, priority
+  # job_id <- 4001 # n = 4141, priority
+  # job_id <- 5001 # n = 12422, priority
 } else {
   job_id <-as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 }
@@ -54,8 +56,6 @@ pe_overall <- 0.7
 # assume PE(sensitive at position j) = PE(other at position j) = 0.7 at all positions besides 230
 # assume PE(resistant at 230) = 0
 pe_230 <- 1 - exp(log(1 - pe_overall) / gammas$prop_placebo[gammas$pos == 230])
-pe_sites <- rep(0.7, nrow(gammas))
-pe_sites[gammas$pos == 230] <- pe_230
 
 # rate of loss-to-followup per year; assume 10% (observed 9.4% in HVTN 704, 6.3% in 703)
 # q <- 769 / 4611
@@ -64,7 +64,8 @@ q <- 0.1
 # sample size; from Gilbert (2019), Table 2
 ns <- c(2071, 4141, 12422)
 # incidence among placebo-arm subjects; rate per person-year
-lambda_0s <- c(.037, .018, .006)
+# lambda_0s <- c(.03, .018, .006)
+lambda_0s <- c(0.018, 0.009, 0.003)
 
 # set up the other simulation parameters
 analyses <- c("site-scanning", "priority")
@@ -88,7 +89,7 @@ system.time(
     run_sim2_once(mc_id = i + args$nreps_per_job * (current_dynamic_args$mc_id - 1),
                   n = current_dynamic_args$n, all_positions = all_positions, gamma = gammas,
                   lambda_0 = current_dynamic_args$lambda_0, beta = log(1 - pe_overall),
-                  alpha = log(1 - pe_sites) - log(1 - 0), 
+                  alpha = log(1 - pe_230) - log(1 - 0), 
                   eos = 365 * 2, q = q,
                   site_scanning = (current_dynamic_args$analysis == "site-scanning"),
                   positions = positions, position = which(gammas$pos == 230),

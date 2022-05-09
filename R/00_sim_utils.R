@@ -185,7 +185,7 @@ objective_function <- function(par, gamma, delta) {
 # @param position the position(s) of interest that actually have sieve effects
 # @return a dataset with outcomes and gp120 AA sites
 gen_data_sim2 <- function(n = 1000, all_positions = 1:100, gamma_0, lambda_0 = 3.04,
-                          pe_max = 0.95, beta = log(1 - 0.18), alpha = rep(log(1 - 0.95) - log(1 - 0), 100),
+                          pe_max = 0.95, beta = log(1 - 0.18), alpha = log(1 - 0.95) - log(1 - 0),
                           q = 769 / 4611, eos = 365 * 2,
                           positions = c(1:26),
                           position = 1) {
@@ -193,23 +193,13 @@ gen_data_sim2 <- function(n = 1000, all_positions = 1:100, gamma_0, lambda_0 = 3
     a <- rbinom(n, 1, 0.5)
     # generate censoring
     C <- runif(n, min = 0, max = eos / q)
+    # generate latent cause-specific infection times
+    t0 <- rexp(n, rate = lambda_0) * 365
+    t1 <- rexp(n, rate = lambda_0 * gamma_0[position] * exp(a * alpha)) * 365
+    t <- pmin(t0, t1)
     # generate latent mark variable denoting sensitive vs other at each position
     S <- t(replicate(n, rbinom(length(all_positions), 1, gamma_0)))
-    # numbers in each group
-    n00 <- sum(a == 0 & S[, position] == 0)
-    n01 <- sum(a == 0 & S[, position] == 1)
-    n10 <- sum(a == 1 & S[, position] == 0)
-    n11 <- sum(a == 1 & S[, position] == 1)
-    # generate outcome data according to the model; note that I'm considering time-to-infection in *days*
-    t00 <- rexp(n00, rate = lambda_0) * 365
-    t01 <- rexp(n01, rate = lambda_0 * gamma_0[position]) * 365
-    t10 <- rexp(n10, rate = lambda_0) * 365
-    t11 <- rexp(n11, rate = lambda_0 * gamma_0[position] * exp(alpha)) * 365
-    t <- vector("numeric", n)
-    t[a == 0 & S[, position] == 0] <- t00
-    t[a == 0 & S[, position] == 1] <- t01
-    t[a == 1 & S[, position] == 0] <- t10
-    t[a == 1 & S[, position] == 1] <- t11
+    S[, position] <- as.numeric(t == t1)
     # determine observed endpoints
     y <- as.numeric(t <= eos & t <= C)
     obstime <- pmin(t, C, eos)
@@ -234,6 +224,22 @@ get_time_point <- function(t = rep(1, 100), C = rep(1, 100), n_events = 88) {
     all_y <- do.call(cbind, lapply(1:200 * 7, function(x) as.numeric(t <= x & t <= C)))
     time_point <- which.min(abs(colSums(all_y) - n_events))
     return(time_point)
+}
+
+# get p-value from Lunn & McNeil test
+# @param dat the dataset 
+# @param mark the mark value
+lunn_mcneil_pval <- function(dat, mark, package = "sievePH") {
+    if (package == "sievePH") {
+        this_sievePH <- sievePH::sievePH(eventTime = dat$t, eventInd = dat$y,
+                                         mark = mark, tx = dat$a)
+        pval <- summary(this_sievePH, markGrid = 0)$pWald.HRconstant.2sided
+    } else {
+        this_result <- lunnMcneilTest(flrtime = dat$t, flrstatus = dat$y,
+                                      flrtype = mark + 1, Vx = dat$a)
+        pval <- this_result$coefficients[3, 5]
+    }
+    return(pval)
 }
 
 # run the procedure once
@@ -287,13 +293,7 @@ run_sim2_once <- function(mc_id = 1, n = 1000, all_positions = 1:100, gammas,
                 sum(this_mark[!is.na(this_mark)] == 1) <= minvar_screen) {
                 all_pvals[j] <- 1
             } else {
-                this_result <- lunnMcneilTest(flrtime = dat2$t, flrstatus = dat2$y,
-                                              flrtype = this_mark + 1, Vx = dat2$a)
-                all_pvals[j] <- this_result$coefficients[3, 5]
-                # this_result <- sievePH::sievePH(eventTime = dat2$t, eventInd = dat2$y,
-                #                                 mark = this_mark, tx = dat2$a)
-                # this_summ <- summary(this_result, markGrid = 0)
-                # all_pvals[j] <- this_summ$pWald.HRconstant.2sided
+                all_pvals[j] <- lunn_mcneil_pval(dat = dat2, mark = this_mark, package = "sievePH")
             }
         }
     } else {
@@ -306,9 +306,7 @@ run_sim2_once <- function(mc_id = 1, n = 1000, all_positions = 1:100, gammas,
                 sum(this_mark[!is.na(this_mark)] == 1) <= minvar_screen) {
                 all_pvals[j] <- 1
             } else {
-                this_result <- lunnMcneilTest(flrtime = dat2$t, flrstatus = dat2$y,
-                                              flrtype = this_mark + 1, Vx = dat2$a)
-                all_pvals[j] <- this_result$coefficients[3, 5]
+                all_pvals[j] <- lunn_mcneil_pval(dat = dat2, mark = this_mark, package = "sievePH")
             }
         }
     }
