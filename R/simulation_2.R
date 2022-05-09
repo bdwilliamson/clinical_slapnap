@@ -14,6 +14,7 @@ source(here("R", "lunnMcneil.R"))
 # get command-line args --------------------------------------------------------
 # these specify: the number of total replicates, the number of replicates per job
 parser <- ArgumentParser()
+parser$add_argument("--analysis", default = "priority", help = "the analysis to run")
 parser$add_argument("--nreps-total", default = 1000, type = "double", help = "the total number of replicates")
 parser$add_argument("--nreps-per-job", default = 1, type = "double", help = "the total number of replicates per job")
 parser$add_argument("--output-dir", default = here::here("R_output", "simulation_1"), help = "the output directory")
@@ -52,11 +53,6 @@ gammas[gammas$pos == 230, ]$prop_placebo <- 1 - gammas[gammas$pos == 230, ]$prop
 # assume PE(overall) = 0.7
 pe_overall <- 0.7
 
-# prevention efficacy given a sensitive residue at the given position;
-# assume PE(sensitive at position j) = PE(other at position j) = 0.7 at all positions besides 230
-# assume PE(resistant at 230) = 0
-pe_230 <- 1 - exp(log(1 - pe_overall) / gammas$prop_placebo[gammas$pos == 230])
-
 # rate of loss-to-followup per year; assume 10% (observed 9.4% in HVTN 704, 6.3% in 703)
 # q <- 769 / 4611
 q <- 0.1
@@ -68,18 +64,21 @@ ns <- c(2071, 4141, 12422)
 lambda_0s <- c(0.018, 0.009, 0.003)
 
 # set up the other simulation parameters
-analyses <- c("site-scanning", "priority")
-param_grid <- expand.grid(mc_id = seq_len(nreps_per_combo), n = ns, analysis = analyses)
+param_grid <- expand.grid(mc_id = seq_len(nreps_per_combo), n = ns,
+                          pe_0 = c(0, 0.1, 0.2, 0.3))
 param_grid$lambda_0 <- case_when(
   param_grid$n == ns[1] ~ lambda_0s[1],
   param_grid$n == ns[2] ~ lambda_0s[2],
   param_grid$n == ns[3] ~ lambda_0s[3]
 )
+# prevention efficacy given a sensitive residue at the given position;
+param_grid$pe_1 <- get_pe_1(pe_overall = pe_overall, pe_0 = param_grid$pe_0,
+                            gamma = gammas$prop_placebo[gammas$pos == 230])
 current_dynamic_args <- param_grid[job_id, ]
-print(paste0("Running n = ", current_dynamic_args$n, " for the ", current_dynamic_args$analysis, " analysis"))
+print(paste0("Running n = ", current_dynamic_args$n, " for the ", args$analysis, " analysis"))
 
 # run the simulation -----------------------------------------------------------
-current_seed <- job_id + current_dynamic_args$n + as.numeric(current_dynamic_args$analysis == "site-scanning") * 1e4
+current_seed <- job_id + current_dynamic_args$n + as.numeric(args$analysis == "site-scanning") * 1e4
 print(current_seed)
 set.seed(current_seed)
 # approx. 38 seconds per replication for site-scanning (n = 4000).
@@ -89,15 +88,15 @@ system.time(
     run_sim2_once(mc_id = i + args$nreps_per_job * (current_dynamic_args$mc_id - 1),
                   n = current_dynamic_args$n, all_positions = all_positions, gamma = gammas,
                   lambda_0 = current_dynamic_args$lambda_0, beta = log(1 - pe_overall),
-                  alpha = log(1 - pe_230) - log(1 - 0), 
+                  alpha = log(1 - current_dynamic_args$pe_1) - log(1 - current_dynamic_args$pe_0),
                   eos = 365 * 2, q = q,
-                  site_scanning = (current_dynamic_args$analysis == "site-scanning"),
+                  site_scanning = (args$analysis == "site-scanning"),
                   positions = positions, position = which(gammas$pos == 230),
                   minvar_screen = 0)
   })
 )
 output <- tibble::as_tibble(data.table::rbindlist(output_lst))
-# for debugging: 
+# for debugging:
 # round(colMeans(output))
 output %>%
   group_by(position) %>%

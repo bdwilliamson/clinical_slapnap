@@ -126,6 +126,9 @@ prob_v <- function(v, alpha, gamma, delta) {
 objective_function <- function(par, gamma, delta) {
     abs(sum(unlist(lapply(as.list(0:1), function(v) prob_v(v, alpha = par, gamma = gamma, delta = delta)))) - 1)
 }
+get_pe_1 <- function(pe_overall, pe_0, gamma) {
+  1 - exp( (log(1 - pe_overall) - (1 - gamma) * log(1 - pe_0)) / gamma)
+}
 # generate a dataset
 # @param n the sample size
 # @param all_positions the positions on Env
@@ -216,7 +219,7 @@ gen_data_sim2 <- function(n = 1000, all_positions = 1:100, gamma_0, lambda_0 = 3
     return(dat)
 }
 
-# compute the number of events at each time point, 
+# compute the number of events at each time point,
 # return the closest time point that yields the desired number of events
 # @param t a vector of survival times
 # @param n_events the number of events we're stopping at
@@ -227,7 +230,7 @@ get_time_point <- function(t = rep(1, 100), C = rep(1, 100), n_events = 88) {
 }
 
 # get p-value from Lunn & McNeil test
-# @param dat the dataset 
+# @param dat the dataset
 # @param mark the mark value
 lunn_mcneil_pval <- function(dat, mark, package = "sievePH") {
     if (package == "sievePH") {
@@ -293,7 +296,7 @@ run_sim2_once <- function(mc_id = 1, n = 1000, all_positions = 1:100, gammas,
                 sum(this_mark[!is.na(this_mark)] == 1) <= minvar_screen) {
                 all_pvals[j] <- 1
             } else {
-                all_pvals[j] <- lunn_mcneil_pval(dat = dat2, mark = this_mark, package = "sievePH")
+                all_pvals[j] <- lunn_mcneil_pval(dat = dat2, mark = this_mark, package = "none")
             }
         }
     } else {
@@ -306,7 +309,7 @@ run_sim2_once <- function(mc_id = 1, n = 1000, all_positions = 1:100, gammas,
                 sum(this_mark[!is.na(this_mark)] == 1) <= minvar_screen) {
                 all_pvals[j] <- 1
             } else {
-                all_pvals[j] <- lunn_mcneil_pval(dat = dat2, mark = this_mark, package = "sievePH")
+                all_pvals[j] <- lunn_mcneil_pval(dat = dat2, mark = this_mark, package = "none")
             }
         }
     }
