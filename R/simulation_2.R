@@ -21,7 +21,7 @@ parser$add_argument("--output-dir", default = here::here("R_output", "simulation
 args <- parser$parse_args()
 
 if (!is.na(Sys.getenv("RSTUDIO", unset = NA))) {
-  job_id <- 1 # n = 2071, priority
+  job_id <- 3001 # n = 2071, priority
   # job_id <- 4001 # n = 4141, priority
   # job_id <- 5001 # n = 12422, priority
 } else {

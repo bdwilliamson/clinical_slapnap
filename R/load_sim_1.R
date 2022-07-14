@@ -30,7 +30,6 @@ mc_vars <- all_output %>%
   mutate(relative_efficiency = aug_FALSE / aug_TRUE,
          outcome = ifelse(datatype == "binary", "IC80 < 1", "IC80"),
          percentage = factor(epsilon, levels = c(0.5, 1, 2), labels = c("50%", "100%", "200%")),
-         perc_labels = as.character(percentage),
          bnab = factor(bnab, levels = c(
            "VRC01", "VRC07-523-LS", "PGT121", "VRC26.25", "PGDM1400",
            "VRC07-523-LS + PGT121", "VRC07-523-LS + VRC26.25", "VRC07-523-LS + PGDM1400", "VRC07-523-LS + 10-1074",
@@ -46,8 +45,7 @@ continuous_rel_eff_plot <- mc_vars %>%
        x = "Prediction Performance", color = "bnAb") +
   scale_x_continuous(sec.axis = sec_axis(~ ., name = "Percentage Increase in Available Viruses",
                                          breaks = NULL, labels = NULL)) +
-  facet_grid(rows = vars(outcome), cols = vars(percentage), 
-             labeller = label_bquote(rows = Outcome:~IC[80]))
+  facet_grid(rows = vars(outcome), cols = vars(percentage), labeller = label_both)
 
 binary_rel_eff_plot <- mc_vars %>% 
   filter(outcome == "IC80 < 1") %>% 
@@ -56,8 +54,7 @@ binary_rel_eff_plot <- mc_vars %>%
   geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
   labs(y = "Relative Efficiency (ignoring vs using auxiliary sequences)", 
        x = "Prediction Performance", color = "bnAb") +
-  facet_grid(rows = vars(outcome), cols = vars(percentage), 
-             labeller = label_bquote(rows = Outcome:~IC[80] < 1))
+  facet_grid(rows = vars(outcome), cols = vars(percentage), labeller = label_both)
 
 lgnd <- get_legend(continuous_rel_eff_plot)
 ylab <- get_y_axis(continuous_rel_eff_plot)

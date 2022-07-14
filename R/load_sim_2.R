@@ -12,14 +12,13 @@ all_output <- tibble::tibble(data.table::rbindlist(
 ))
 results <- all_output %>% 
   group_by(analysis, n, position, pe_0) %>% 
-  summarize(power = mean(reject), .groups = "drop") %>% 
+  summarize(power = mean(reject)) %>% 
   mutate(analysis = factor(analysis), n = factor(n), 
          `PE(S230 = 0)` = factor(pe_0))
 
 power_plot <- results %>% 
   ggplot(aes(x = n, y = power, color = analysis)) +
-  geom_point(position = position_dodge(width = 0.5)) +
-  ylim(0, 1) +
+  geom_point(position = position_dodge()) +
   labs(y = "Empirical power", x = "n", color = "Analysis") +
   facet_grid(cols = vars(`PE(S230 = 0)`), labeller = label_both) +
   theme(legend.position = "bottom", legend.direction = "horizontal")
