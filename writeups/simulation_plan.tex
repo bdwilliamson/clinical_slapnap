@@ -31,7 +31,7 @@
 \DeclareMathOperator*{\logit}{logit}
 
 \author{Brian Williamson}
-\title{Simulation plan: clinical SLAPNAP manuscript}
+\title{Numerical experiments for ``Super Learner Prediction of NAb Panels (SLAPNAP) repository for combination monoclonal broadly neutralizing antibody HIV prevention research'', by Williamson et al.}
 \date{\today}
 
 \begin{document}
@@ -39,7 +39,7 @@
 
 \section{Introduction}
 
-This document describes the planned simulations for the clinical SLAPNAP manuscript. The simulations address the following goals:
+This document describes the planned simulations for the manuscript ``Super Learner Prediction of NAb Panels (SLAPNAP) repository for combination monoclonal broadly neutralizing antibody HIV prevention research'', by Williamson et al. The simulations address the following goals:
 \begin{enumerate}
     \item determine if using external data (i.e., Env sequences) results in variance reduction for estimating the mean $\log_{10}$ IC$_{80}$ value and/or the probability that IC$_{80} < 1$; and
     \item determine if using SLAPNAP can improve sieve analysis.
@@ -49,7 +49,7 @@ In the next section, I describe my proposed approach to answering these two ques
 \section{Simulation plan}
 \subsection{Using auxiliary response variables reduces estimation variance}
 \subsubsection{Continuous outcome}
-The simplest case for examining variance reductions is in the case of a continuous outcome (quantitative IC$_{80}$). The results from SLAPNAP runs predicting (estimated) IC$_{80}$ for each bnAb or bnAb regimen in Table 1 of the SLAPNAP clinical manuscript are presented in the second column of Table~\ref{tab:perf-continuous}. We define estimated IC$_{80}$ for $J$ bnAbs according to estimated $\text{IC}_{80} = \left(\sum_{j=1}^J \text{IC}_{80,j}^{-1}\right)^{-1}$.
+The simplest case for examining variance reductions is in the case of a continuous outcome (quantitative IC$_{80}$). The results from SLAPNAP runs predicting (estimated) IC$_{80}$ for each bnAb or bnAb regimen in Table 1 of ``Super Learner Prediction of NAb Panels (SLAPNAP) repository for combination monoclonal broadly neutralizing antibody HIV prevention research'' are presented in the second column of Table~\ref{tab:perf-continuous}. We define estimated IC$_{80}$ for $J$ bnAbs according to estimated $\text{IC}_{80} = \left(\sum_{j=1}^J \text{IC}_{80,j}^{-1}\right)^{-1}$.
 
 For this simulation, for each bnAb in Table~\ref{tab:perf-continuous}, we denote by $W$ the $\log_{10}$ PAR score obtained from SLAPNAP (note that the untransformed PAR score is an estimator of $IC_{80}$ in this case) and by $Y$ the $\log_{10}$ IC$_{80}$ readout. We suppose that $(W,Y) \sim N(\mu, \Sigma)$, where $\mu = (\mu_1, \mu_2)$ is a mean vector and $\Sigma = \begin{bmatrix} \Sigma_{11} & \Sigma_{12} \\ \Sigma_{21} & \Sigma_{22} \end{bmatrix}$ is a covariance matrix. For simplicity, we set $\mu_1 = \mu_2 = \mu^*$, with $\mu^*$ the mean $\log_{10}$ IC$_{80}$ value in the CATNAP data for the specified bnAb (or bnAb regimen), and set $\Sigma_{11} = \Sigma_{22} = \Sigma^*$, with $\Sigma^*$ the variance of $\log_{10}$ IC$_{80}$ in the CATNAP data for the specified bnAb (or bnAb regimen). Under this model, we can write
 \begin{align*}
@@ -176,22 +176,22 @@ For each position $j$, we define the overall PE as a function of the PE of a sen
 \begin{align}
   \log \{1 - PE(\text{overall})\} =& \ \gamma_{0,j} \log \{1 - PE(S_j = 1)\} + (1 - \gamma_{0,j}) \log \{1 - PE(S_j = 0)\}. \label{eq:pe}
 \end{align}
-To simplify the simulation, we assume absence of sieve effects at all AA positions except for AA position 230. This position was observed to have a sieve effect with respect to VRC01 in one of the AMP trials (HVTN 704 / HPTN 085), where the presence of residue D at position 230 was found to be resistant (estimated 64\% PE based on \emph{not} residue D at 230 vs. estimated -24\% PE based on residue D at 230). We assume that $PE(S_{230} = 0) = 0$. Following Equation~\eqref{eq:pe}, this yields $PE(S_{230} = 1) \approx 0.89$.
+To simplify the simulation, we assume absence of sieve effects at all AA positions except for AA position 230. This position was observed to have a sieve effect with respect to VRC01 in one of the AMP trials (HVTN 704 / HPTN 085), where the presence of residue D at position 230 was found to be resistant (estimated 64\% PE based on \emph{not} residue D at 230 vs. estimated -24\% PE based on residue D at 230). We initially assume that $PE(S_{230} = 0) = 0$. Following Equation~\eqref{eq:pe}, under this assumption $PE(S_{230} = 1) \approx 0.89$.
 
-Next, we define a vector of sieve effect parameters $\alpha$, where we define $\alpha_{230} = \log(1 - 0.89) - \log(1 - 0) \approx -2.21$, and for all other positions $\{j \in \{1, \ldots, J\}: j \neq 230\}$ we define $\alpha_j = 0$. We let $T_0$ and $T_1$ denote the latent cause-specific time to HIV-1 infection diagnosis with a virus with $S_{230} = 0$ and $S_{230} = 1$, respectively, and let $T$ denote the latent HIV-1 infection diagnosis time with $T = \min \{T_0, T_1\}$. More specifically, we model the latent cause-specific HIV-1 infection diagnosis times as
+Next, we let $T_0$ and $T_1$ denote the latent cause-specific time to HIV-1 infection diagnosis with a virus with $S_{230} = 0$ and $S_{230} = 1$, respectively, and let $T$ denote the latent HIV-1 infection diagnosis time with $T = \min \{T_0, T_1\}$. More specifically, we model the latent cause-specific HIV-1 infection diagnosis times as
 \begin{align*}
-  T_0 \mid A = a \sim & \ Exp(\lambda) \\
-  T_1 \mid A = a \sim & \ Exp\{\lambda\exp(\log \gamma_{0,230} + a \alpha)\} \\
+  T_0 \mid A = a \sim & \ Exp(\lambda \exp[\log (1 - \gamma_{0, 230}) + a \log\{1 - PE(S_{230} = 0)\}]) \\
+  T_1 \mid A = a \sim & \ Exp(\lambda\exp[\log \gamma_{0,230} + a \log\{1 - PE(S_{230} = 1)\}]) \\
   T =& \ \min\{T_0, T_1\}.
 \end{align*}
-Based on our assumption of zero PE against viruses with $S_{230} = 0$, under the above model for the latent HIV-1 infection diagnosis times we can write the following hazards (with $h_j(a)$ denoting the cause-specific hazard of HIV-1 infection with genotype $j$ for $S_{230} = j$ in arm $A = a$):
+Under the above model for the latent HIV-1 infection diagnosis times we can write the following hazards (with $h_j(a)$ denoting the cause-specific hazard of HIV-1 infection with genotype $j$ for $S_{230} = j$ in arm $A = a$):
 \begin{align*}
-  h_0(A = 0) =& \ \lambda \\
+  h_0(A = 0) =& \ \lambda (1 - \gamma_{0, 230}) \\
   h_1(A = 0) =& \ \lambda \gamma_{0,230} \\
-  h_0(A = 1) =& \ \lambda \\
-  h_1(A = 1) =& \ \lambda \gamma_{0,230} \{1 - PE(S_{230})\},
+  h_0(A = 1) =& \ \lambda (1 - \gamma_{0, 230}) \{1 - PE(S_{230} = 0)\} \\
+  h_1(A = 1) =& \ \lambda \gamma_{0,230} \{1 - PE(S_{230} = 1)\};
 \end{align*}
-which aligns precisely with our assumptions above that prevention efficacy based on the resistant genotype at 230 is zero. We assume three different baseline hazards among those with $S_{230} = 0$: $\lambda \in \{.018, .009, .003\}$, corresponding to three different incidence rates. In each of the three settings, the baseline hazard has been calibrated so that we expect to see approximately 88 HIV-1 infections over the 24-month followup period, in line with Gilbert (2019). These baseline hazards imply sample sizes $n \in \{2071, 4141, 12422\}$ (see Table 2 in Gilbert, 2019).
+under the assumption that $PE(S_{230} = 0)$, $h_0(A = 1) = \lambda (1 - \gamma_{0, 230}) = h_0(A = 0)$, which aligns precisely with our assumptions above that prevention efficacy based on the resistant genotype at 230 is zero. We assume three different baseline hazards among those with $S_{230} = 0$: $\lambda \in \{.03, .018, .006\}$, corresponding to three different incidence rates. In each of the three settings, the baseline hazard has been calibrated so that we expect to see approximately 88 HIV-1 infections over the 24-month followup period, in line with Gilbert (2019). These baseline hazards imply sample sizes $n \in \{2071, 4141, 12422\}$ (see Table 2 in Gilbert, 2019).
 
 Then we define the following censoring and observation processes:
 \begin{align*}
@@ -205,8 +205,8 @@ where $C$ denotes the censoring time, which is independent of $T$; $\Delta$ deno
 We will use Cox modeling (Lunn and McNeil, 1995; implemented in the \texttt{R} package \texttt{sievePH}) to estimate differential prevention efficacy. For each of 1000 Monte-Carlo replications, we generate data according to the following specification. For a given baseline hazard $\lambda$ and corresponding sample size $n$, we first generate $n$ independent observations of
 \begin{align*}
   A \sim & \ Bern(0.5) \\
-  T_0 \sim & \ Exp(\lambda) \\
-  T_1 \sim & \ Exp\{\lambda\exp(\log \gamma_{0,230} + a \alpha)\} \\
+  T_0 \sim & \ Exp(\lambda \exp[\log (1 - \gamma_{0, 230}) + a \log\{1 - PE(S_{230} = 0)\}]) \\
+  T_1 \sim & \ Exp(\lambda\exp[\log \gamma_{0,230} + a \log\{1 - PE(S_{230} = 1)\}]) \\
   T =& \ \min\{T_0, T_1\} \\
   S_{230} =& \ I\{T = T_1\} \\
   S_j \sim & \ Bern(\gamma_{0,j}) \text{ for } j \in \{1, \ldots, J\} \setminus \{230\} \text{ mutually independent} \\
@@ -218,19 +218,19 @@ For a given dataset, we consider two different sieve analysis strategies. The fi
 
 The priority sieve analysis has the opportunity to provide greater power because we adjust for a smaller number of hypothesis tests, if indeed the SLAPNAP procedure for identifying sites most likely to impact in vivo vaccine efficacy has some predictive power. We compute the power as the Monte-Carlo average number of true detections across the 1000 replications. We repeat the process of generating 1000 Monte-Carlo replications for each assumed baseline hazard and corresponding sample size. Comparing the power of the site-scanning approach to the priority approach will provide a useful description of how much SLAPNAP aids in sieve analysis.
 
-To better understand power as a function of the effect size, we also generate data under several different hypothesized values of $PE(S_{230} = 0)$. The corresponding parameter values used in the simulations are provided in Table~\ref{tab:effect_size}.
+To better understand power as a function of the effect size, we also generate data under several different hypothesized values of $PE(S_{230} = 0)$. The corresponding parameter values used in the simulations are provided in Table~\ref{tab:effect_size}. The case $PE(S_{230} = 0) = PE(S_{230} = 1) = 0.7$ corresponds to the sieve null hypothesis, in which case the power of the sieve analyses should be controlled at the type I error rate (0.05). The case $PE(S_{230} = 0) = 0$ should result in the highest power for detecting sieve effects.
 
 \begin{table}
   \centering
-  \caption{Values of $PE(S_{230} = 1)$ and the corresponding parameter $\alpha$ based on differing values of $PE(S_{230} = 0)$. These values are guaranteed to satisfy the constraint on overall PE provided in Equation~\eqref{eq:pe}.}
+  \caption{Values of $PE(S_{230} = 1)$ based on differing values of $PE(S_{230} = 0)$. These values are guaranteed to satisfy the constraint on overall PE provided in Equation~\eqref{eq:pe}.}
   \label{tab:effect_size}
   \begin{tabular}{lll}
-    $PE(S_{230} = 0)$ & $PE(S_{230} = 1)$ & $\alpha_{230}$ \\
+    $PE(S_{230} = 0)$ & $PE(S_{230} = 1)$ \\
     \hline
-    0 & 0.89 & -2.21 \\
-    0.1 & 0.88 & -2.01 \\
-    0.2 & 0.86 & -1.74\\
-    0.3 & 0.85 & -1.54
+    0 & 0.89 \\
+    0.233 & 0.86 \\
+    0.466 & 0.81\\
+    0.7 & 0.7
   \end{tabular}
 \end{table}
 
