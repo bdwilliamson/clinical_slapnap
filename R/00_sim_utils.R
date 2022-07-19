@@ -173,6 +173,21 @@ get_pe_1 <- function(pe_overall, pe_0, gamma) {
 #     dat <- data.frame(y = y, t = t, a = a, v)
 #     return(dat)
 # }
+gen_data_sim2_simple <- function(n = 1000, lambda_0 = 0.018, 
+                                 alpha = log(1 - .7),
+                                 q = .1, eos = 365 * 2) {
+    # generate treatment data
+    a <- rbinom(n, 1, 0.5)
+    # generate censoring
+    C <- runif(n, min = 0, max = eos / q)
+    t <- rexp(n, rate = lambda_0 * exp(a * alpha)) * 365 
+    # determine observed endpoints
+    y <- as.numeric(t <= eos & t <= C)
+    obstime <- pmin(t, C, eos)
+    delta <- (obstime == C)
+    dat <- data.frame(y = y, t = obstime, a = a, delta = delta)
+    return(dat)
+}
 # generate a dataset
 # @param n the sample size
 # @param all_positions the positions on Env
@@ -188,7 +203,7 @@ get_pe_1 <- function(pe_overall, pe_0, gamma) {
 # @param position the position(s) of interest that actually have sieve effects
 # @return a dataset with outcomes and gp120 AA sites
 gen_data_sim2 <- function(n = 1000, all_positions = 1:100, gamma_0, lambda_0 = 3.04,
-                          pe_max = 0.95, beta = log(1 - 0.18), alpha = log(1 - 0.95) - log(1 - 0),
+                          pe_max = 0.95, beta = log(1 - 0.18), pe_0 = 0, pe_1 = .89,
                           q = 769 / 4611, eos = 365 * 2,
                           positions = c(1:26),
                           position = 1) {
@@ -197,8 +212,8 @@ gen_data_sim2 <- function(n = 1000, all_positions = 1:100, gamma_0, lambda_0 = 3
     # generate censoring
     C <- runif(n, min = 0, max = eos / q)
     # generate latent cause-specific infection times
-    t0 <- rexp(n, rate = lambda_0) * 365
-    t1 <- rexp(n, rate = lambda_0 * gamma_0[position] * exp(a * alpha)) * 365
+    t0 <- rexp(n, rate = lambda_0 * (1 - gamma_0[position]) * exp(a * log(1 - pe_0))) * 365 # hazard among those with S230 = 0
+    t1 <- rexp(n, rate = lambda_0 * gamma_0[position] * exp(a * log(1 - pe_1))) * 365 # hazard among those with S230 = 1
     t <- pmin(t0, t1)
     # generate latent mark variable denoting sensitive vs other at each position
     S <- t(replicate(n, rbinom(length(all_positions), 1, gamma_0)))
@@ -245,6 +260,16 @@ lunn_mcneil_pval <- function(dat, mark, package = "sievePH") {
     return(pval)
 }
 
+run_sim2_simple_once <- function(mc_id = 1, n = 1000, lambda_0 = 0.018,
+                                 alpha = log(1 - .7), q = .1, eos = 365 * 2) {
+    dat <- gen_data_sim2_simple(n = n, lambda_0 = lambda_0, alpha = alpha, q = q, eos = eos)
+    surv_fit <- coxph(Surv(time = t, event = y) ~ a, data = dat)
+    ret <- tibble::tibble(mc_id = mc_id, n = n, 
+                          hr_p = summary(surv_fit)$waldtest[3],
+                          n_events = sum(dat$y),
+                          n_0 = sum(dat$y[dat$a == 0]),
+                          n_1 = sum(dat$y[dat$a == 1]))
+}
 # run the procedure once
 # @param n the sample size
 # @param all_positions the unique Env positions
@@ -258,28 +283,36 @@ lunn_mcneil_pval <- function(dat, mark, package = "sievePH") {
 # @param eos the final study date (in days)
 # @param positions the truly important positions (only used in the sieve analysis if site_scanning = FALSE)
 # @param position the position(s) of interest that actually have sieve effects
-
 # @param site_scanning should we look at all sites (TRUE) or the sites specified in 'positions' (FALSE)?
+# @param pe_0 prevention efficacy when S230 = 0
+# @param pe_1 prevention efficacy when S230 = 1
+# @param minvar_screen how many observed marks do we need for stability
+# @param debug return a simple summary, for debugging
+# @param package which code to use for testing?
 # @return whether or not each important site was truly detected
 run_sim2_once <- function(mc_id = 1, n = 1000, all_positions = 1:100, gammas,
-                          lambda_0 = 3.04, beta = log(1 - 0.18), alpha = rep(log(1 - 0.95) - log(1 - 0.18), 100),
-                          q = 769 / 4611, eos = 365 * 2, site_scanning = TRUE, pe_0 = 0,
+                          lambda_0 = 3.04, beta = log(1 - 0.18),
+                          q = 769 / 4611, eos = 365 * 2, site_scanning = TRUE, 
+                          pe_0 = 0, pe_1 = .89,
                           positions = c(1:26), position = 1,
-                          minvar_screen = 10, debug = FALSE) {
+                          minvar_screen = 10, debug = FALSE, package = "none") {
     # generate data
     dat <- gen_data_sim2(n = n, all_positions = all_positions, lambda_0 = lambda_0,
                          gamma_0 = gammas$prop_placebo,
-                         beta = beta, alpha = alpha, q = q,
+                         beta = beta, pe_0 = pe_0, pe_1 = pe_1, q = q,
                          eos = eos, positions = positions, position = position)
+    cc_dat <- dat[complete.cases(dat), ]
+    y_summ <- data.frame(mc_id = mc_id, n = sum(dat$y), n00 = sum(cc_dat$y[cc_dat$a == 0 & cc_dat$X230 == 0]),
+                         n01 = sum(cc_dat$y[cc_dat$a == 0 & cc_dat$X230 == 1]),
+                         n10 = sum(cc_dat$y[cc_dat$a == 1 & cc_dat$X230 == 0]),
+                         n11 = sum(cc_dat$y[cc_dat$a == 1 & cc_dat$X230 == 1]))
     if (debug) {
         # get number of events
-        cc_dat <- dat[complete.cases(dat), ]
-        y_summ <- data.frame(mc_id = mc_id, n = sum(dat$y), n00 = sum(cc_dat$y[cc_dat$a == 0 & cc_dat$X230 == 0]),
-                             n01 = sum(cc_dat$y[cc_dat$a == 0 & cc_dat$X230 == 1]),
-                             n10 = sum(cc_dat$y[cc_dat$a == 1 & cc_dat$X230 == 0]),
-                             n11 = sum(cc_dat$y[cc_dat$a == 1 & cc_dat$X230 == 1]))
         return(y_summ)
     }
+    # survival analysis for primary analysis
+    surv_fit <- survival::coxph(Surv(time = t, event = y) ~ a, data = dat)
+    overall_p <- summary(surv_fit)$waldtest[3]
     # apply minimum variability filter
     n_cases_with_each_mark <- apply(dat[dat$y == 1, 4:ncol(dat)], 2, function(x) sum(dat$y[x == 1], na.rm = TRUE))
     dat2 <- dat[, c(1:3, which(n_cases_with_each_mark >= minvar_screen) + 3)]
@@ -296,7 +329,7 @@ run_sim2_once <- function(mc_id = 1, n = 1000, all_positions = 1:100, gammas,
                 sum(this_mark[!is.na(this_mark)] == 1) <= minvar_screen) {
                 all_pvals[j] <- 1
             } else {
-                all_pvals[j] <- lunn_mcneil_pval(dat = dat2, mark = this_mark, package = "none")
+                all_pvals[j] <- lunn_mcneil_pval(dat = dat2, mark = this_mark, package = package)
             }
         }
     } else {
@@ -309,7 +342,7 @@ run_sim2_once <- function(mc_id = 1, n = 1000, all_positions = 1:100, gammas,
                 sum(this_mark[!is.na(this_mark)] == 1) <= minvar_screen) {
                 all_pvals[j] <- 1
             } else {
-                all_pvals[j] <- lunn_mcneil_pval(dat = dat2, mark = this_mark, package = "none")
+                all_pvals[j] <- lunn_mcneil_pval(dat = dat2, mark = this_mark, package = package)
             }
         }
     }
@@ -320,12 +353,18 @@ run_sim2_once <- function(mc_id = 1, n = 1000, all_positions = 1:100, gammas,
     if (site_scanning) {
         # ret_p <- adj_p[positions]
         ret_p <- adj_p[analysis_positions == paste0("X", 230)]
+        unadjusted_p <- all_pvals[analysis_positions == paste0("X", 230)]
     } else {
         # ret_p <- adj_p
         ret_p <- adj_p[positions == 230]
+        unadjusted_p = all_pvals[positions == 230]
     }
     ret <- tibble::tibble(mc_id = mc_id, n = n, analysis = ifelse(site_scanning, "Site-scanning", "Priority"),
                           pe_0 = pe_0,
-                          position = 230, p_val = ret_p, reject = ret_p < 0.05)
+                          position = 230, p_val = ret_p, reject = ret_p < 0.05, 
+                          unadjusted_p_val = unadjusted_p,
+                          hr_p = overall_p,
+                          n_events = y_summ$n, n00 = y_summ$n00, n01 = y_summ$n01,
+                          n10 = y_summ$n10, n11 = y_summ$n11)
     return(ret)
 }
