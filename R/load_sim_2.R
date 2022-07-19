@@ -12,16 +12,18 @@ all_output <- tibble::tibble(data.table::rbindlist(
 ))
 results <- all_output %>% 
   group_by(analysis, n, position, pe_0) %>% 
-  summarize(power = mean(reject)) %>% 
+  summarize(power = mean(reject), .groups = "drop") %>% 
   mutate(analysis = factor(analysis), n = factor(n), 
-         `PE(S230 = 0)` = factor(pe_0))
+         `PE(S230 = 0)` = factor(round(pe_0, 3)))
 
 power_plot <- results %>% 
   ggplot(aes(x = n, y = power, color = analysis)) +
-  geom_point(position = position_dodge()) +
+  geom_point() +
+  geom_hline(yintercept = 0.9, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = 0.05, linetype = "dashed", color = "red") +
   labs(y = "Empirical power", x = "n", color = "Analysis") +
   facet_grid(cols = vars(`PE(S230 = 0)`), labeller = label_both) +
-  theme(legend.position = "bottom", legend.direction = "horizontal")
+  theme(legend.position = "bottom", legend.direction = "horizontal") 
 
 ggsave(filename = here::here("R_output", "sim_2.png"),
        plot = power_plot,
