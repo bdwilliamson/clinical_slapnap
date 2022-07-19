@@ -82,7 +82,7 @@ print(current_seed)
 set.seed(current_seed)
 # approx. 38 seconds per replication for site-scanning (n = 4000).
 # approx. 1 second per replication for priority (n = 4000).
-if (.Platform$OS.type == "Windows") {
+if (.Platform$OS.type == "windows") {
   library("parallel")
   num_cores <- parallel::detectCores()
   cl <- parallel::makePSOCKcluster(num_cores)
@@ -120,11 +120,11 @@ if (.Platform$OS.type == "Windows") {
     run_sim2_once(mc_id = i + args$nreps_per_job * (current_dynamic_args$mc_id - 1),
                   n = current_dynamic_args$n, all_positions = all_positions, gamma = gammas,
                   lambda_0 = current_dynamic_args$lambda_0, beta = log(1 - pe_overall),
-                  alpha = log(1 - current_dynamic_args$pe_1) - log(1 - current_dynamic_args$pe_0),
+                  pe_1 = current_dynamic_args$pe_1, pe_0 = current_dynamic_args$pe_0, 
                   eos = 365 * 2, q = q,
                   site_scanning = (args$analysis == "site-scanning"),
                   positions = positions, position = which(gammas$pos == 230),
-                  minvar_screen = 0, pe_0 = current_dynamic_args$pe_0)
+                  minvar_screen = 0, package = "none")
   })
   end <- Sys.time()
   cat("Elapsed time: ", format(end - start), "\n")
