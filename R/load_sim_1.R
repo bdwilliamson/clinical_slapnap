@@ -64,7 +64,7 @@ full_plot <- plot_grid(
     theme(axis.line.x = element_blank(), axis.line.y = element_blank()),
   plot_grid(
     continuous_rel_eff_plot + labs(x = NULL, y = NULL) + theme(legend.position = "none"),
-    binary_rel_eff_plot + labs(x = NULL, y = NULL) + theme(legend.position = "none",
+    binary_rel_eff_plot + labs(y = NULL) + theme(legend.position = "none",
                                                            strip.text.x = element_blank()),
     nrow = 2, ncol = 1
   ),
@@ -84,4 +84,4 @@ full_plot <- plot_grid(
 
 ggsave(filename = here::here("R_output", "sim_1_rel_eff.png"),
        plot = full_plot, 
-       width = 9, height = 5, units = "in")
+       width = 9.5, height = 5, units = "in")
