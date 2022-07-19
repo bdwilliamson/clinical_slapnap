@@ -100,4 +100,4 @@ full_plot <- plot_grid(
 
 ggsave(filename = here::here("R_output", "sim_1b_rel_eff.png"),
        plot = full_plot, 
-       width =  10, height = 5, units = "in")
+       width =  11.5, height = 5, units = "in")
