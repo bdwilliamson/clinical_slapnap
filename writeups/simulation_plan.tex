@@ -30,9 +30,13 @@
 \DeclareMathOperator*{\argmin}{argmin}
 \DeclareMathOperator*{\logit}{logit}
 
-\author{Brian Williamson}
+\author{Brian D. Williamson$^{1,2}$ \\
+${}^1$Biostatistics Division, Kaiser Permanente Washington Health Research Institute \\
+${}^2$Vaccine and Infectious Disease Division, Fred Hutchinson Cancer Center \\
+Seattle, WA, USA
+}
 \title{Numerical experiments for ``Super Learner Prediction of NAb Panels (SLAPNAP) repository for combination monoclonal broadly neutralizing antibody HIV prevention research'', by Williamson et al.}
-\date{\today}
+\date{}
 
 \begin{document}
 \maketitle
@@ -137,7 +141,7 @@ For each random dataset, our goal is now to estimate $\theta = E(Y) = P(\text{IC
 
 The goal of this simulation is to see if SLAPNAP improves sieve analysis; in particular, we want to see if using SLAPNAP results in improved power for detecting sieve effects. For simplicity, we will use VRC01 to define residues that are sensitive or resistant for this simulation, and consider an Antibody Mediated Prevention Trials (AMP)-like design with only the high-dose arm. In this simulation, we assume that we are using data from a trial assessing the prevention efficacy of a combination bnAb regimen $R$ (involving a VRC01-type bnAb) that is expected to have higher prevention efficacy than that observed in AMP.
 
-Suppose that we randomly assign study participants in a 1:1 allocation to placebo or the combination regimen $R$, letting $A \in \{0,1\}$ denote the treatment assignment (0 = placebo, 1 = assignment to $R$). Suppose further that each participant in the trial has an underlying time to HIV-1 infection diagnosis (denoted by $T$), and a corresponding genotype for the infecting HIV-1 virus. We let $S = (S_1, \ldots, S_J)$ denote a binary indicator vector, where $S_j$ is the indicator that the Env sequence has the putative sensitive residue present at amino acid (AA) position $j$ in the Env protein, and $J$ is the number of HXB2 positions in the Env protein that exhibit sufficient residue variability. We define sufficient residue variability at a given position by at least 4 primary endpoint cases from AMP having a sequence with a minority residue at that position (harmonized with the AMP sieve analysis). Based on AMP, there are XX AA sites that exhibit sufficient variability (i.e., $J = XX$) (\textcolor{blue}{XX: forthcoming from Craig based on the AMP data}). More specifically, we assume that
+Suppose that we randomly assign study participants in a 1:1 allocation to placebo or the combination regimen $R$, letting $A \in \{0,1\}$ denote the treatment assignment (0 = placebo, 1 = assignment to $R$). Suppose further that each participant in the trial has an underlying time to HIV-1 infection diagnosis (denoted by $T$), and a corresponding genotype for the infecting HIV-1 virus. We let $S = (S_1, \ldots, S_J)$ denote a binary indicator vector, where $S_j$ is the indicator that the Env sequence has the putative sensitive residue present at amino acid (AA) position $j$ in the Env protein, and $J$ is the number of HXB2 positions in the Env protein that exhibit sufficient residue variability. We define sufficient residue variability at a given position by at least 4 primary endpoint cases from AMP having a sequence with a minority residue at that position, pooled over both AMP trials (harmonized with the AMP sieve analysis). Based on AMP, there are 414 AA sites that exhibit sufficient variability (i.e., $J = 414$). More specifically, we assume that
 \begin{align*}
   A \sim & \ Bern(0.5) \\
   S_j \sim & \ Bern(\gamma_{0,j}) \text{ for } j \in \{1, \ldots, J\}.
