@@ -46,7 +46,7 @@ Seattle, WA, USA
 This document describes the planned simulations for the manuscript ``Super Learner Prediction of NAb Panels (SLAPNAP) repository for combination monoclonal broadly neutralizing antibody HIV prevention research'', by Williamson et al. The simulations address the following goals:
 \begin{enumerate}
     \item determine if using external data (i.e., Env sequences) results in variance reduction for estimating the mean $\log_{10}$ IC$_{80}$ value and/or the probability that IC$_{80} < 1$; and
-    \item determine if using SLAPNAP can improve sieve analysis.
+    \item determine if using SLAPNAP \citep{williamson2021} can improve sieve analysis.
 \end{enumerate}
 In the next section, I describe my proposed approach to answering these two questions using simulations.
 
@@ -55,14 +55,16 @@ In the next section, I describe my proposed approach to answering these two ques
 \subsubsection{Continuous outcome}
 The simplest case for examining variance reductions is in the case of a continuous outcome (quantitative IC$_{80}$). The results from SLAPNAP runs predicting (estimated) IC$_{80}$ for each bnAb or bnAb regimen in Table 1 of ``Super Learner Prediction of NAb Panels (SLAPNAP) repository for combination monoclonal broadly neutralizing antibody HIV prevention research'' are presented in the second column of Table~\ref{tab:perf-continuous}. We define estimated IC$_{80}$ for $J$ bnAbs according to estimated $\text{IC}_{80} = \left(\sum_{j=1}^J \text{IC}_{80,j}^{-1}\right)^{-1}$.
 
-For this simulation, for each bnAb in Table~\ref{tab:perf-continuous}, we denote by $W$ the $\log_{10}$ PAR score obtained from SLAPNAP (note that the untransformed PAR score is an estimator of $IC_{80}$ in this case) and by $Y$ the $\log_{10}$ IC$_{80}$ readout. We suppose that $(W,Y) \sim N(\mu, \Sigma)$, where $\mu = (\mu_1, \mu_2)$ is a mean vector and $\Sigma = \begin{bmatrix} \Sigma_{11} & \Sigma_{12} \\ \Sigma_{21} & \Sigma_{22} \end{bmatrix}$ is a covariance matrix. For simplicity, we set $\mu_1 = \mu_2 = \mu^*$, with $\mu^*$ the mean $\log_{10}$ IC$_{80}$ value in the CATNAP data for the specified bnAb (or bnAb regimen), and set $\Sigma_{11} = \Sigma_{22} = \Sigma^*$, with $\Sigma^*$ the variance of $\log_{10}$ IC$_{80}$ in the CATNAP data for the specified bnAb (or bnAb regimen). Under this model, we can write
+For this simulation, for each bnAb in Table~\ref{tab:perf-continuous}, we denote by $W$ the $\log_{10}$ proteomic antibody resistance (PAR) score obtained from SLAPNAP and by $Y$ the $\log_{10}$ IC$_{80}$ readout. The untransformed PAR score is an estimator of $IC_{80}$ in this case. We suppose that $(W,Y) \sim N(\mu, \Sigma)$, where $\mu = (\mu_1, \mu_2)$ is a mean vector and $\Sigma = \begin{bmatrix} \Sigma_{11} & \Sigma_{12} \\ \Sigma_{21} & \Sigma_{22} \end{bmatrix}$ is a covariance matrix. For simplicity, we set $\mu_1 = \mu_2 = \mu^*$, with $\mu^*$ the mean $\log_{10}$ IC$_{80}$ value in the CATNAP data \citep{yoon2015} for the specified bnAb (or bnAb regimen), and set $\Sigma_{11} = \Sigma_{22} = \Sigma^*$, with $\Sigma^*$ the variance of $\log_{10}$ IC$_{80}$ in the CATNAP data for the specified bnAb (or bnAb regimen). Under this model, we can write
 \begin{align*}
     R^2 =& \ 1 - \frac{var(W)}{var(Y)} \\
     =& \ 1 - \frac{\Sigma_{12}^2\Sigma_{22}^{-1}}{\Sigma_{11}}.
 \end{align*}
-We can then generate data according to $\Sigma_{12}^2 = (1 - R^2)\Sigma_{22}\Sigma_{11}$, using the point estimates of CV-$R^2$ provided in Table~\ref{tab:perf-continuous} (and under the simplifying assumption made above, $\Sigma_{11} = \Sigma_{22} = \Sigma^*$). We could also consider using a smaller number of values: for example, the median of the CV-$R^2$ values, the minimum value, and the maximum value.
+We can then generate data according to $\Sigma_{12}^2 = (1 - R^2)\Sigma_{22}\Sigma_{11}$, using the point estimates of CV-$R^2$ provided in Table~\ref{tab:perf-continuous} (and under the simplifying assumption made above, $\Sigma_{11} = \Sigma_{22} = \Sigma^*$).
+% We could also consider using a smaller number of values: for example, the median of the CV-$R^2$ values, the minimum value, and the maximum value.
 
-For each bnAb under consideration (either all in Table 1 or three ``bnAbs'' corresponding to the three CV-$R^2$ values highlighted above), we generate 1000 random datasets according to the following specification:
+% For each bnAb under consideration (either all in Table 1 or three ``bnAbs'' corresponding to the three CV-$R^2$ values highlighted above), we generate 1000 random datasets according to the following specification:
+For each bnAb under consideration, we generate 1000 random datasets according to the following specification:
 \begin{enumerate}
     \item We generate $n = 1000$ iid copies $(W_i, Y_i) \sim N(\mu^*, \Sigma^*)$, where again $Y$ denotes the $\log_{10}$ IC$_{80}$ values and $W$ denotes the corresponding $\log_{10}$ PAR scores. We truncate the upper limit of $Y$ at 1 (equivalent to an IC$_{80}$ of 10). We have found that IC$_{80} > 10$ mcg/ml indicates that a virus is resistant to the bnAb (regimen). Thus, this cutoff provides the key information for discriminating viruses above a cutoff of 10, and our interest is in discriminating viruses below this cutoff.
     \item We then generate $\epsilon \times 100$\% additional $\log_{10}$ PAR scores from this same distribution and suppress the IC$_{80}$ measurement, where $\epsilon \in \{0.5, 1, 2\}$.
@@ -73,7 +75,7 @@ For each random dataset, our goal is to estimate the mean value of $Y$, $\theta 
 \begin{align*}
     U_i(\theta, \lambda_i) =& \ \frac{R_i}{\lambda_i}(Y_i - \theta) - \frac{(R_i - \lambda_i)}{\lambda_i}\{E(Y \mid W_i) - \theta\}.
 \end{align*}
-We estimate $E(Y \mid W_i)$ using ordinary least squares -- denoting our estimator as $g_n: w \mapsto g_n(w)$ -- and then can use the estimating equation above to obtain an estimator of $\theta$. In our case, a consistent estimator of $\lambda$ is $\lambda_{n,i} = n / \{(1 + \epsilon)n\}$ for all $i$. In this special case, a closed form solution for $\theta$ exists:
+We estimate $E(Y \mid W_i)$ using ordinary least squares, denoting our estimator as $g_n: w \mapsto g_n(w)$, and then use the estimating equation above to obtain an estimator of $\theta$. In our case, a consistent estimator of $\lambda$ is $\lambda_{n,i} = n / \{(1 + \epsilon)n\}$ for all $i$. In this special case, a closed form solution for $\theta_n$ exists:
 \begin{align*}
     \theta_n = \frac{1}{n\lambda}\sum_{i=1}^nR_i(Y_i - g_n(W_i)) + \frac{1}{n}\sum_{i=1}^n g_n(W_i)
 \end{align*}
@@ -128,7 +130,7 @@ We use a similar approach for binary outcomes to the approach outlined in the pr
     AUC =& P(W_1 < W_2 \mid Y_1 = 0, Y_2 = 1) \\
     =& \ P(W_2 - W_1 > 0 \mid Y_1 = 0, Y_2 = 1);
 \end{align*}
-setting $Z = W_2 - W_1$, we see that $Z$ has a normal distribution with mean $\mu_1 - \mu_0$ and variance $\sigma^2_0 + \sigma^2_1$. Thus,
+setting $Z = W_2 - W_1$, we see that conditional on $(Y_1, Y_2)$, $Z$ has a normal distribution with mean $\mu_1 - \mu_0$ and variance $\sigma^2_0 + \sigma^2_1$. Thus,
 \begin{align*}
     AUC =& \ P\left(\frac{Z - (\mu_1 - \mu_0)}{\sqrt{\sigma^2_0 + \sigma^2_1}} > \frac{- (\mu_1 - \mu_0)}{\sqrt{\sigma^2_0 + \sigma^2_1}}\right) \\
     \Rightarrow \frac{(\mu_1 - \mu_0)}{\sqrt{\sigma^2_1 + \sigma^2_0}} =& \ (-1)\Phi^{-1}(1 - AUC),
