@@ -91,6 +91,32 @@ est_theta <- function(dat, preds, lambda, augmented = TRUE) {
     theta_n <- (1 / lambda) * mean(dat$r * (dat$y - preds), na.rm = TRUE) + mean(preds)
     return(theta_n)
 }
+estimating_equation <- function(dat, preds, theta, lambda) {
+  term <- ifelse(is.na(dat$y), (-1) * (dat$r - lambda) / lambda * (preds - theta),
+                 dat$r / lambda * (dat$y - theta))
+  sum(term)
+}
+
+# sim1b_boot_stat <- function(data, indices, augmented, outcome_type, lambda) {
+sim1b_boot_stat <- function(data, indices, augmented, outcome_type, g_n) {
+  dat <- data[indices, ]
+  lambda <- sum(dat$r == 1) / nrow(dat)
+  if (!augmented) {
+    dat <- subset(dat, r == 1)
+  } 
+  y <- dat$y
+  r <- dat$r
+  w <- dat$w
+  if (grepl("binary", outcome_type)) {
+    fam <- binomial()
+  } else {
+    fam <- gaussian()
+  }
+  # g_n <- glm(y ~ w, data = dat, subset = (dat$r == 1), family = fam)
+  preds <- predict(g_n, newdata = dat, type = "response")
+  theta_n <- (1 / lambda) * mean(dat$r * (dat$y - preds), na.rm = TRUE) + mean(preds)
+  return(theta_n)
+}
 
 # get one set of estimates
 get_ests <- function(mc_id = 1, n = 100, epsilon = 0.2, point_est = 0.2, datatype = "binary", params = list( mu0 = -0.32, sigma0 = 0.005, sigma1 = 0.005, p_y = 0.5), augmented = TRUE) {
