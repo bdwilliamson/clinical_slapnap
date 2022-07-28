@@ -10,13 +10,16 @@ all_output_files <- list.files(here::here("R_output", "simulation_2"))
 all_output <- tibble::tibble(data.table::rbindlist(
   lapply(as.list(here::here("R_output", "simulation_2", all_output_files)), readRDS)
 ))
+pe_0_labels <- sort(round(unique(all_output$pe_0), 3), decreasing = TRUE)
 results <- all_output %>% 
   group_by(analysis, n, position, pe_0) %>% 
   summarize(power = mean(reject), .groups = "drop") %>% 
   mutate(analysis = factor(analysis), n = factor(n), 
-         `PE(S230 = 0)` = factor(round(pe_0, 3)))
+         `PE(S230 = 0)` = factor(round(pe_0, 3),
+                                 levels = pe_0_labels))
 
 power_plot <- results %>% 
+  arrange(`PE(S230 = 0)`) %>% 
   ggplot(aes(x = n, y = power, color = analysis, group = analysis)) +
   geom_point(position = position_dodge(width = 0.25)) +
   geom_hline(yintercept = 0.9, linetype = "dashed", color = "red") +
