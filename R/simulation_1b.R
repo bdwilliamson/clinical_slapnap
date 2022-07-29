@@ -41,7 +41,8 @@ if (!any(grepl("_", args$bnab))) {
     select(-seq.id.lanl, -seq.id.catnap, -num.seqs.in.country.catnap, -num.seqs.in.country.all,
            -seq.in.catnap, -seq.in.lanl.2019, -contains("ic50"), -contains("censored")) %>%
     rename(ic80 = contains("ic80")) %>%
-    mutate(sens = as.numeric(ic80 < 1), .after = "ic80")
+    mutate(sens = as.numeric(ic80 < 1), .after = "ic80") %>%
+    mutate(ic80 = log10(ic80))
   n_ab <- 1
 } else {
   # handle bnAb regimen
@@ -50,7 +51,8 @@ if (!any(grepl("_", args$bnab))) {
            -seq.in.catnap, -seq.in.lanl.2019, -contains("ic50"), -contains("ic80"),
            -contains("iip"), -contains("dichotomous")) %>%
     mutate(ic80 = dat %>% pull(pc.ic80),
-           sens = as.numeric(ic80 < 1), .after = "country.iso")
+           sens = as.numeric(ic80 < 1), .after = "country.iso") %>%
+    mutate(ic80 = log10(ic80))
   n_ab <- 2
 }
 
