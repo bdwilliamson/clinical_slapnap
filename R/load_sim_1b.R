@@ -21,13 +21,14 @@ all_output <- tibble::tibble(data.table::rbindlist(
   mutate(bnab = gsub("_", " + ", bnab),
          bnab = ifelse(bnab == "VRC01-PGDM1400-10E8v4", "VRC01/PGDM1400/10E8v4", bnab),
          width = ifelse(width == 0, NA, width),
-         sq_width = ifelse(sq_width == 0, NA, sq_width))
+         sq_width = ifelse(sq_width == 0, NA, sq_width),
+         est_ic80 = factor(ifelse(outcome == "ic80", as.numeric(est < 0), as.numeric(est > 0.5))))
 ci_widths <- all_output %>%
   select(-est, -starts_with("ci"), -width) %>%
-  # group_by(bnab, country, n_catnap, n_overall, datatype, augmented) %>%
-  pivot_wider(names_from = augmented, values_from = sq_width,
+  pivot_wider(names_from = augmented, values_from = c(sq_width, est_ic80),
               names_prefix = "aug_") %>%
-  mutate(relative_efficiency = aug_FALSE / aug_TRUE,
+  mutate(relative_efficiency = sq_width_aug_FALSE / sq_width_aug_TRUE,
+         est_ic80 = est_ic80_aug_FALSE,
          outcome = ifelse(datatype == "binary", "IC80 < 1", "IC80"),
          # percentage = factor(epsilon, levels = c(0.5, 1, 2), labels = c("50%", "100%", "200%")),
          bnab = factor(bnab, levels = c(
@@ -41,15 +42,13 @@ ci_widths <- all_output %>%
            "China", "Germany", "Kenya", "Malawi", "Tanzania", "Uganda", "United States", "South Africa"
          )),
          `AUC` = factor(case_when(
-           outcome == "IC80 < 1" & prediction_performance <= 0.7 ~ "1",
-           outcome == "IC80 < 1" & prediction_performance > 0.7 & prediction_performance <= 0.8 ~ "2",
-           outcome == "IC80 < 1" & prediction_performance > 0.8 ~ "3",
-         ), levels = c("1", "2", "3"), labels = c("[0.5, 0.7]", "(0.7, 0.8]", "(0.8, 1]")),
+           outcome == "IC80 < 1" & prediction_performance <= 0.65 ~ "1",
+           outcome == "IC80 < 1" & prediction_performance > 0.65 ~ "2",
+         ), levels = c("1", "2"), labels = c("[0.5, 0.65]", "(0.65, 1]")),
          `R-squared` = factor(case_when(
-           outcome == "IC80" & prediction_performance <= 0.2 ~ "1",
-           outcome == "IC80" & prediction_performance > 0.2 & prediction_performance <= 0.4 ~ "2",
-           outcome == "IC80" & prediction_performance > 0.4 ~ "3",
-         ), levels = c("1", "2", "3"), labels = c("[0, 0.2]", "(0.2, 0.4]", "[0.4, 1]")),
+           outcome == "IC80" & prediction_performance <= 0.32 ~ "1",
+           outcome == "IC80" & prediction_performance > 0.32 ~ "2",
+         ), levels = c("1", "2"), labels = c("[0, 0.32]", "(0.32, 1]")),
          excess_prop = (n_overall - n_catnap) / n_catnap * 100)
 
 # Distribution of numbers in CATNAP, LANL
@@ -107,3 +106,15 @@ full_plot <- plot_grid(
 ggsave(filename = here::here("R_output", "sim_1b_rel_eff.png"),
        plot = full_plot,
        width =  11.5, height = 5, units = "in")
+
+
+ci_widths %>%
+  filter(outcome == "IC80", country == "United States") %>% 
+  select(bnab, n_catnap, n_overall, prediction_performance, relative_efficiency)
+
+all_output %>% 
+  filter(outcome == "ic80", country == "US") %>% 
+  select(bnab, n_catnap, n_overall, prediction_performance, augmented, est, sq_width) %>% 
+  mutate(transformed_est = 10 ^ est) %>% 
+  print(n = Inf)
+  

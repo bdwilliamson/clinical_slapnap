@@ -105,7 +105,6 @@ g_mod <- glm(y ~ w, data = dat_for_g,
              family = switch(as.numeric(outcome_type == "binary") + 1, gaussian(),
                              binomial()))
 
-
 # run the analyses -------------------------------------------------------------
 set.seed(4747)
 seeds <- round(runif(length(countries_of_interest), 1e4, 1e5))
