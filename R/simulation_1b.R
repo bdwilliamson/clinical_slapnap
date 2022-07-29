@@ -103,10 +103,10 @@ slapnap_mod <- readRDS(paste0(slapnap_folder, "/", learner_files[closest_date]))
 
 # estimate E(Y | W) based on all of slapnap preds
 all_preds <- slapnap_mod$SL.predict
-dat_for_g <- tibble::tibble(w = all_preds, y = slapnap_mod$Y) %>% 
+dat_for_g <- tibble::tibble(w = all_preds, y = slapnap_mod$Y) %>%
   mutate(r = as.numeric(!is.na(y)))
-g_mod <- glm(y ~ w, data = dat_for_g, 
-             family = switch(as.numeric(outcome_type == "binary") + 1, gaussian(), 
+g_mod <- glm(y ~ w, data = dat_for_g,
+             family = switch(as.numeric(outcome_type == "binary") + 1, gaussian(),
                              binomial()))
 
 
@@ -161,7 +161,7 @@ for (country in countries_of_interest) {
     boot_ci_theta_aug <- list("percent" = matrix(c(0, 0, 0, theta_aug, theta_aug), nrow = 1))
   }
   cis <- rbind(boot_ci_theta$percent[, 4:5], boot_ci_theta_aug$percent[, 4:5])
-  
+
   output <- bind_rows(
     output,
     tibble::tibble(bnab = args$bnab, outcome = args$outcome,
@@ -169,7 +169,8 @@ for (country in countries_of_interest) {
                    augmented = c(FALSE, TRUE),
                    est = c(theta, theta_aug),
                    ci_ll = cis[, 1], ci_ul = cis[, 2]) %>%
-      mutate(width = ci_ul - ci_ll)
+      mutate(width = ci_ul - ci_ll,
+             sq_width = width ^ 2)
   )
 }
 
