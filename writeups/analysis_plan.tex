@@ -161,9 +161,9 @@ For each bnAb regimen and outcome considered in Tables~\ref{tab:perf-continuous}
     \item Obtain estimate $\theta_{n,1}$ of $\theta$ (the mean outcome value, as in Section~\ref{sec:var_reduce}) using only data in CATNAP;
     \item Obtain estimate $\theta_{n,2}$ of $\theta$ using data in CATNAP and LANL, using Equation~\eqref{eq:aug_mean};
     \item Obtain a non-augmented 95\% percentile bootstrap confidence interval for $\theta$: draw 5000 bootstrap datasets $\{D_{c,b}\}_{b = 1}^{5000}$. On each bootstrap dataset, use $g_n$ to predict using $W_{c,b}$, then obtain an estimate $\theta_{n,1,b}$ using data with $R_{c,b} = 1$, and take the 2.5th and 97.5th percentiles of $\theta_{n,1,b}$;
-    \item Obtain a non-augmented 95\% percentile bootstrap confidence interval for $\theta$: draw 5000 bootstrap datasets $\{D_{c,b}\}_{b = 1}^{5000}$. On each bootstrap dataset, use $g_n$ to predict using $W_{c,b}$, then obtain an estimate $\theta_{n,2,b}$ using the entire dataset, and take the 2.5th and 97.5th percentiles of $\theta_{n,2,b}$;
+    \item Obtain an augmented 95\% percentile bootstrap confidence interval for $\theta$: draw 5000 bootstrap datasets $\{D_{c,b}\}_{b = 1}^{5000}$. On each bootstrap dataset, use $g_n$ to predict using $W_{c,b}$, then obtain an estimate $\theta_{n,2,b}$ using the entire dataset, and take the 2.5th and 97.5th percentiles of $\theta_{n,2,b}$;
     \item Compute the width of each 95\% CI;
-    \item Compute the relative efficiency as the ratio of the non-augmented width to the augmented width.
+    \item Compute the relative efficiency as the ratio of the squared non-augmented width to the squared augmented width.
   \end{enumerate}
 \end{enumerate}
 
