@@ -26,7 +26,7 @@ parser$add_argument("--outcome", default = "ic80", help = "the outcome of intere
 parser$add_argument("--output-dir", default = here::here("R_output", "simulation_1b"), help = "the output directory")
 args <- parser$parse_args()
 
-print(paste0("Running bnAb ", args$bnab))
+print(paste0("Running bnAb ", args$bnab, "; outcome ", args$outcome))
 
 outcome_type <- ifelse(args$outcome == "ic80", "continuous", "binary")
 
@@ -85,11 +85,11 @@ b <- 5000
 # get predictions from SLAPNAP--------------------------------------------------
 # read in the correct model
 slapnap_folder <- here::here("docker_output",
-                             paste0(switch(as.numeric(outcome_type == "continuous") + 1, NULL, "continuous"), "/", tolower(args$bnab)))
+                             paste0(switch(as.numeric(outcome_type == "continuous") + 1, "", "continuous/"), tolower(args$bnab), "/"))
 all_learner_files <- list.files(slapnap_folder,
-                           pattern = paste0("learner_", args$outcome, "_", args$bnab))
+                                pattern = paste0("learner_", outcome_txt, "_", args$bnab))
 learner_files <- all_learner_files[!grepl("cv", all_learner_files)]
-dates <- as.Date(gsub(paste0("learner_", args$outcome, "_", args$bnab, "_"), "", gsub(".rds", "", learner_files)),
+dates <- as.Date(gsub(paste0("learner_", outcome_txt, "_", args$bnab, "_"), "", gsub(".rds", "", learner_files)),
                     format = "%d%b%Y")
 current_date <- Sys.Date()
 closest_date <- which.min(current_date - dates)
