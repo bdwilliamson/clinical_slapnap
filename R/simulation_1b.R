@@ -21,7 +21,7 @@ source(here("R", "00_utils.R"))
 # and the outcome type (binary or continuous)
 parser <- ArgumentParser()
 parser$add_argument("--bnab", default = "PGT121", help = "the bnAb of interest")
-parser$add_argument("--country_threshold", type = "double", default = "20", help = "min number of neutralization readouts for consideration")
+parser$add_argument("--country-threshold", type = "double", default = "20", help = "min number of neutralization readouts for consideration")
 parser$add_argument("--outcome", default = "ic80", help = "the outcome of interest")
 parser$add_argument("--output-dir", default = here::here("R_output", "simulation_1b"), help = "the output directory")
 args <- parser$parse_args()
@@ -33,12 +33,6 @@ outcome_type <- ifelse(args$outcome == "ic80", "continuous", "binary")
 # set up the dataset -----------------------------------------------------------
 # read in the data
 dat <- read_csv(here::here("dat", paste0("slapnap_lanl_", args$bnab, "_wcountry.csv")))
-
-# redefine the outcome of interest, remove unneccessary variables
-refined_dat <- dat %>%
-  select(-seq.id.lanl, -seq.id.catnap, -num.seqs.in.country.catnap, -num.seqs.in.country.all,
-         -seq.in.catnap, -seq.in.lanl.2019, -contains("ic50"), -contains("censored")) %>%
-  rename(ic80 = !!(paste0(args$bnab, ".ic80.imputed")))
 
 # redefine the outcome of interest, remove unneccessary variables
 if (!any(grepl("_", args$bnab))) {
