@@ -105,6 +105,7 @@ sim1b_boot_stat <- function(data, indices, augmented, outcome_type, g_n) {
     dat <- subset(dat, r == 1)
   } 
   y <- dat$y
+  y2 <- ifelse(is.na(y), 0, y)
   r <- dat$r
   w <- dat$w
   if (grepl("binary", outcome_type)) {
@@ -114,7 +115,7 @@ sim1b_boot_stat <- function(data, indices, augmented, outcome_type, g_n) {
   }
   # g_n <- glm(y ~ w, data = dat, subset = (dat$r == 1), family = fam)
   preds <- predict(g_n, newdata = dat, type = "response")
-  theta_n <- (1 / lambda) * mean(dat$r * (dat$y - preds), na.rm = TRUE) + mean(preds)
+  theta_n <- (1 / lambda) * mean(r * (y2 - preds), na.rm = TRUE) + mean(preds)
   return(theta_n)
 }
 

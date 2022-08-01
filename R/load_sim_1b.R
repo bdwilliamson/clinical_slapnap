@@ -49,7 +49,9 @@ ci_widths <- all_output %>%
            outcome == "IC80" & prediction_performance <= 0.32 ~ "1",
            outcome == "IC80" & prediction_performance > 0.32 ~ "2",
          ), levels = c("1", "2"), labels = c("[0, 0.32]", "(0.32, 1]")),
-         excess_prop = (n_overall - n_catnap) / n_catnap * 100)
+         n_lanl = n_overall - n_catnap,
+         excess_prop_catnap = (n_lanl - n_catnap) / n_catnap * 100,
+         excess_prop_lanl = (n_lanl - n_catnap) / n_lanl)
 
 # Distribution of numbers in CATNAP, LANL
 numbers_only <- all_output %>% 
@@ -69,7 +71,7 @@ dist_catnap <- numbers_only %>%
 # Relative efficiency
 continuous_rel_eff_plot <- ci_widths %>%
   filter(outcome == "IC80") %>%
-  ggplot(aes(x = excess_prop, y = relative_efficiency, color = bnab, shape = country)) +
+  ggplot(aes(x = excess_prop_lanl, y = relative_efficiency, color = bnab, shape = country)) +
   geom_point(size = 2.5) +
   scale_shape_manual(values = c(49:56)) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
@@ -80,7 +82,7 @@ continuous_rel_eff_plot <- ci_widths %>%
 
 binary_rel_eff_plot <- ci_widths %>%
   filter(outcome == "IC80 < 1") %>%
-  ggplot(aes(x = excess_prop, y = relative_efficiency, color = bnab, shape = country)) +
+  ggplot(aes(x = excess_prop_lanl, y = relative_efficiency, color = bnab, shape = country)) +
   geom_point(size = 2.5) +
   scale_shape_manual(values = c(49:56)) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
