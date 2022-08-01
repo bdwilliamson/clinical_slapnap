@@ -56,15 +56,15 @@ ci_widths <- all_output %>%
          bounded_relative_efficiency = pmin(relative_efficiency, efficiency_bound))
 
 # Distribution of numbers in CATNAP, LANL
-numbers_only <- all_output %>% 
-  select(bnab, country, n_catnap, n_overall) %>% 
-  group_by(bnab, country, n_catnap, n_overall) %>% 
-  slice(1) %>% 
-  pivot_longer(cols = starts_with("n_"), names_to = "source", values_to = "n") %>% 
+numbers_only <- all_output %>%
+  select(bnab, country, n_catnap, n_overall) %>%
+  group_by(bnab, country, n_catnap, n_overall) %>%
+  slice(1) %>%
+  pivot_longer(cols = starts_with("n_"), names_to = "source", values_to = "n") %>%
   mutate(source = factor(gsub("n_", "", source), levels = c("overall", "catnap"), labels = c("LANL", "CATNAP")),
          bnab_country = factor(paste0(bnab, "_", country)))
-dist_catnap <- numbers_only %>% 
-  filter(source == "CATNAP") %>% 
+dist_catnap <- numbers_only %>%
+  filter(source == "CATNAP") %>%
   ggplot(aes(x = country, y = n)) +
   geom_bar(stat = "identity") +
   labs(x = "Country", y = "Number of sequences", fill = "Data source") +
@@ -111,32 +111,33 @@ ggsave(filename = here::here("R_output", "sim_1b_rel_eff.png"),
        plot = full_plot,
        width =  11.5, height = 5, units = "in")
 
+# a little bit of debugging ----------------------------------------------------
 
 ci_widths %>%
-  filter(outcome == "IC80", country == "United States") %>% 
+  filter(outcome == "IC80", country == "United States") %>%
   select(bnab, n_catnap, n_overall, prediction_performance, relative_efficiency)
 
-all_output %>% 
-  filter(outcome == "ic80", country == "US") %>% 
-  select(bnab, n_catnap, n_overall, ci_ll, ci_ul, sq_width) %>% 
+all_output %>%
+  filter(outcome == "ic80", country == "US") %>%
+  select(bnab, n_catnap, n_overall, ci_ll, ci_ul, sq_width) %>%
   print(n = Inf)
 
-all_output %>% 
-  filter(outcome == "ic80", country == "US") %>% 
-  select(bnab, n_catnap, n_overall, prediction_performance, augmented, est, sq_width) %>% 
-  mutate(transformed_est = 10 ^ est) %>% 
+all_output %>%
+  filter(outcome == "ic80", country == "US") %>%
+  select(bnab, n_catnap, n_overall, prediction_performance, augmented, est, sq_width) %>%
+  mutate(transformed_est = 10 ^ est) %>%
   print(n = Inf)
 
 ci_widths %>%
-  filter(outcome == "IC80", country == "China") %>% 
+  filter(outcome == "IC80", country == "China") %>%
   select(bnab, n_catnap, n_overall, prediction_performance, relative_efficiency, bounded_relative_efficiency)
 
-ci_widths %>% 
-  filter(n_catnap > 50) %>% 
-  select(bnab, country, n_catnap, n_overall, prediction_performance, relative_efficiency, bounded_relative_efficiency) %>% 
+ci_widths %>%
+  filter(n_catnap > 50) %>%
+  select(bnab, country, n_catnap, n_overall, prediction_performance, relative_efficiency, bounded_relative_efficiency) %>%
   print(n = Inf)
-  
-# based on the bounds
+
+# based on the bounds ----------------------------------------------------------
 dodge_width <- 0.01
 dodge_height <- 0.75
 continuous_rel_eff_plot_bounded <- ci_widths %>%
@@ -172,9 +173,57 @@ full_plot_b <- plot_grid(
     binary_rel_eff_plot_bounded + labs( y = NULL) + theme(legend.position = "none"),
     nrow = 2, ncol = 1, rel_heights = c(0.9, 1)
   ),
-  lgnd, nrow = 1, ncol = 3, rel_widths = c(.05, 1, .6)
+  lgnd_b, nrow = 1, ncol = 3, rel_widths = c(.05, 1, .6)
 )
 
 ggsave(filename = here::here("R_output", "sim_1b_rel_eff_bounded.png"),
        plot = full_plot_b,
        width =  11.5, height = 5, units = "in")
+
+# restricting to > X sequences in CATNAP
+dodge_width <- 0.01
+dodge_height <- 0.75
+num_sequences <- c(30, 40, 50)
+# 30 is the primary figure!
+for (i in 1:length(num_sequences)) {
+  continuous_rel_eff_plot_bounded_numseq <- ci_widths %>%
+    filter(outcome == "IC80", n_catnap >= num_sequences[i]) %>%
+    ggplot(aes(x = excess_prop_lanl, y = bounded_relative_efficiency, color = bnab, shape = country)) +
+    geom_point(size = 2.5, position = position_jitter(height = dodge_height)) +
+    scale_shape_manual(values = c(49:56)) +
+    geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
+    labs(y = "Relative Efficiency (ignoring vs using auxiliary sequences)",
+         x = "Proportion of Additional Information in LANL", color = "bnAb",
+         shape = "Country") +
+    facet_grid(rows = vars(outcome), labeller = label_both)
+
+  binary_rel_eff_plot_bounded_numseq <- ci_widths %>%
+    filter(outcome == "IC80 < 1", n_catnap >= num_sequences[i]) %>%
+    ggplot(aes(x = excess_prop_lanl, y = bounded_relative_efficiency, color = bnab, shape = country)) +
+    geom_point(size = 2.5, position = position_jitter(width = dodge_width, height = dodge_height)) +
+    scale_shape_manual(values = c(49:56)) +
+    geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
+    labs(y = "Relative Efficiency (ignoring vs using auxiliary sequences)",
+         x = "Proportion of Additional Information in LANL", color = "bnAb",
+         shape = "Country") +
+    facet_grid(rows = vars(outcome), labeller = label_both)
+
+  lgnd_b_numseq <- get_legend(continuous_rel_eff_plot_bounded_numseq)
+  ylab_b_numseq <- get_y_axis(continuous_rel_eff_plot_bounded_numseq)
+
+  full_plot_b_numseq <- plot_grid(
+    ggplot() + labs(y = "Relative Efficiency (ignoring vs using auxiliary sequences)") +
+      theme(axis.line.x = element_blank(), axis.line.y = element_blank()),
+    plot_grid(
+      continuous_rel_eff_plot_bounded_numseq + labs(x = NULL, y = NULL) + theme(legend.position = "none"),
+      binary_rel_eff_plot_bounded_numseq + labs( y = NULL) + theme(legend.position = "none"),
+      nrow = 2, ncol = 1, rel_heights = c(0.9, 1)
+    ),
+    lgnd_b_numseq, nrow = 1, ncol = 3, rel_widths = c(.05, 1, .6)
+  )
+
+  ggsave(filename = here::here("R_output", paste0("sim_1b_rel_eff_bounded_greater", num_sequences[i],".png")),
+         plot = full_plot_b_numseq,
+         width =  11.5, height = 5, units = "in")
+
+}

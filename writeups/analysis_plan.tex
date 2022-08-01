@@ -152,7 +152,7 @@ For each bnAb regimen and outcome considered in Tables~\ref{tab:perf-continuous}
 \begin{enumerate}
   \item Load the SLAPNAP predictor from Section~\ref{sec:par_scores} corresponding to the given bnAb regimen and outcome; denote the predictor by $f_n: \ell \mapsto f_n(\ell)$, where $\ell$ encodes Env sequence information.
   \item Estimate $E(Y \mid W)$ using the data input to SLAPNAP and the SLAPNAP predictions $w = f_n(\ell)$ based on the CATNAP data; denote the predictor $g_n: w \mapsto g_n(w)$, as in Section~\ref{sec:var_reduce} (for continuous outcomes, use linear regression; for binary outcomes, use logistic regression).
-  \item For each country $c$ with at least 20 pseudoviruses in CATNAP:
+  \item For each country $c$ with at least 30 pseudoviruses in CATNAP:
   \begin{enumerate}
     \item Let $X_c$ denote the combined CATNAP and LANL data from this country, let $Y_c$ denote the observed $\log_{10} \text{IC}_{80}$ or indicator that IC$_{80} < 1$, and let $R_c$ denote the binary vector of whether each sequence was observed in CATNAP;
     \item Obtain predictions $W_c$ based on the SLAPNAP predictor $f_n$ and the Env sequence data $X_c$. Set $D_c = (W_c, R_c, R_cY_c)$;

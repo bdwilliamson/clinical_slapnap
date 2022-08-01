@@ -21,7 +21,7 @@ io_prefix="/fh/scratch/delete90/gilbert_p/bwillia2/clinical_slapnap/output"
 # Run the R script
 echo -e \
     '#!/bin/bash\n Rscript simulation_1b.R ' \
-    '--bnab $1 --outcome $2 --country-threshold 20 ' \
+    '--bnab $1 --outcome $2 --country-threshold 30 ' \
     '--output-dir $3' > run_sim1b.sh
 chmod u+x run_sim1b.sh
 
