@@ -163,9 +163,10 @@ For each bnAb regimen and outcome considered in Tables~\ref{tab:perf-continuous}
     \item Obtain a non-augmented 95\% percentile bootstrap confidence interval for $\theta$: draw 5000 bootstrap datasets $\{D_{c,b}\}_{b = 1}^{5000}$. On each bootstrap dataset, use $g_n$ to predict using $W_{c,b}$, then obtain an estimate $\theta_{n,1,b}$ using data with $R_{c,b} = 1$, and take the 2.5th and 97.5th percentiles of $\theta_{n,1,b}$;
     \item Obtain an augmented 95\% percentile bootstrap confidence interval for $\theta$: draw 5000 bootstrap datasets $\{D_{c,b}\}_{b = 1}^{5000}$. On each bootstrap dataset, use $g_n$ to predict using $W_{c,b}$, then obtain an estimate $\theta_{n,2,b}$ using the entire dataset, and take the 2.5th and 97.5th percentiles of $\theta_{n,2,b}$;
     \item Compute the width of each 95\% CI;
-    \item Compute the relative efficiency as the ratio of the squared non-augmented width to the squared augmented width.
+    \item Compute the relative efficiency as the ratio of the squared non-augmented CI width to the squared augmented CI width.
   \end{enumerate}
 \end{enumerate}
+We display the results in a two-row plot, with the rows corresponding to continuous IC$_{80}$ and the binary indicator that IC$_{80} < 1$. The horizontal axis of each plot is the proportion of additional information in LANL compared to CATNAP, defined as $(\#\{\text{sequences in LANL}\} - \#\{\text{sequences in CATNAP}\}) / \#\{\text{sequences in LANL}\}$; the vertical axis is the relative efficiency, defined as the ratio of the squared CI width of the non-augmented estimator to the squared CI width of the augmented estimator.
 
 \section{Simulation: Sieve analysis}
 
