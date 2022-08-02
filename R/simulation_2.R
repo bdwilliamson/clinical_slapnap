@@ -22,10 +22,9 @@ args <- parser$parse_args()
 
 if (!is.na(Sys.getenv("RSTUDIO", unset = NA))) {
   job_id <- 1 # n = 2071, priority
-  # job_id <- 4001 # n = 4141, priority
-  # job_id <- 5001 # n = 12422, priority
 } else {
-  job_id <-as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
+  # modify the following line if you are not running on a Slurm system
+  job_id <- as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 }
 
 # define static simulation parameters ------------------------------------------

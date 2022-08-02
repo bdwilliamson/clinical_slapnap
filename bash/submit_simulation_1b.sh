@@ -31,6 +31,7 @@ for bnab in ${bnabs[@]}; do
         full_io_prefix="${io_prefix}_${bnab}_${outcome}"
         mkdir -p $full_io_prefix
         io_file="${full_io_prefix}/slurm-%A.out"
+        # modify the following line to run on your cluster environment
         sbatch -A gilbert_p --mem=100G --time=1-0 -e $io_file \
             -o $io_file ./run_sim1b.sh $bnab $outcome $save_dir
     done

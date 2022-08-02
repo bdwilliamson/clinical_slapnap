@@ -22,6 +22,7 @@ chmod u+x run_sim2.sh
 njobs=`expr $2 / $3 \* 12`
 arry="1-$njobs"
 
+# modify the following line to run on your cluster environment
 sbatch -A gilbert_p --time=1-0 --array=$arry -e $io_file \
     -o $io_file ./run_sim2.sh $1 $2 $3 $4
 rm run_sim2.sh
