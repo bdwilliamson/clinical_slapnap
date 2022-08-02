@@ -8,7 +8,7 @@
 \usepackage{graphicx, rotate, array}
 \usepackage{geometry,multirow}
 \usepackage{float}
-%\usepackage{hyperref}
+\usepackage[colorlinks=true, linkcolor=black, urlcolor=cyan, citecolor=black]{hyperref}
 \usepackage{natbib}
 \newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
 \usepackage{mathrsfs}
@@ -30,9 +30,10 @@
 \DeclareMathOperator*{\argmin}{argmin}
 \DeclareMathOperator*{\logit}{logit}
 
-\author{Brian D. Williamson$^{1,2}$ \\
+\author{Brian D. Williamson$^{1,2}$ \& Peter B. Gilbert$^{2,3}$\\
 ${}^1$Biostatistics Division, Kaiser Permanente Washington Health Research Institute \\
 ${}^2$Vaccine and Infectious Disease Division, Fred Hutchinson Cancer Center \\
+${}^3$Department of Biostatistics, University of Washington \\
 Seattle, WA, USA
 }
 \title{Data analyses and numerical experiments for ``Super Learner Prediction of NAb Panels (SLAPNAP) repository for combination monoclonal broadly neutralizing antibody HIV prevention research'', by Williamson et al.}
@@ -47,31 +48,32 @@ This document describes the planned data analyses and simulations for the manusc
 
 The analyses address the following goals:
 \begin{enumerate}
-    \item (data analysis) obtain proteomic antibody resistance (PAR) scores and estimate predictive performance of SLAPNAP for different bnAb regimens;
-    \item (simulation) determine if using external data (i.e., Env sequences) results in variance reduction for estimating the mean $\log_{10}$ IC$_{80}$ value and/or the probability that IC$_{80} < 1$;
-    \item (data analysis) determine if using Env sequences from the Los Alamos National Laboratory results in variance reduction for estimating the mean $\log_{10}$ IC$_{80}$ value and/or the probability that IC$_{80} < 1$ in different countries, compared to using data from CATNAP \citep{yoon2015} alone; and
-    \item (simulation) determine if using SLAPNAP \citep{williamson2021} can improve sieve analysis.
+    \item \textit{(data analysis)} obtain proteomic antibody resistance (PAR) scores and estimate predictive performance of SLAPNAP for different bnAb regimens;
+    \item \textit{(simulation)} determine if using external data (i.e., Env sequences) results in variance reduction for estimating the mean $\log_{10}$ IC$_{80}$ value and/or the probability that IC$_{80} < 1$;
+    \item \textit{(data analysis)} determine if using Env sequences from the Los Alamos National Laboratory results in variance reduction for estimating the mean $\log_{10}$ IC$_{80}$ value and/or the probability that IC$_{80} < 1$ in different countries, compared to using data from CATNAP \citep{yoon2015} alone; and
+    \item \textit{(simulation)} determine if using SLAPNAP \citep{williamson2021} can improve sieve analysis.
 \end{enumerate}
-In the next sections, I describe my proposed approach to answering these questions.
+In the next sections, we describe our proposed approach to answering these questions. All analysis code is available on GitHub at \url{https://www.github.com/bdwilliamson/clinical\_slapnap}.
 
 \section{Data analysis: Obtaining PAR scores and estimating prediction performance}\label{sec:par_scores}
 
-For this analysis, we use SLAPNAP \citep{williamson2021} for each bnAb regimen provided in Table 1 of the main manuscript, providing both a predictor of the mean $\log_{10}$ IC$_{80}$ value and a predicted probability that IC$_{80} < 1$ for each bnAb regimen. The estimated prediction performance of the resulting PAR scores is provided in Table 2 of the main manuscript and in Tables~\ref{tab:perf-continuous} and \ref{tab:perf-binary} below. The code used to run SLAPNAP for each bnAb regimen is available on GitHub.
+For this analysis, we use SLAPNAP \citep{williamson2021} for each bnAb regimen provided in Table 1 of the main manuscript, providing both a predictor of the mean $\log_{10}$ IC$_{80}$ value and a predicted probability that IC$_{80} < 1$ for each bnAb regimen. The estimated prediction performance of the resulting PAR scores is provided in Table 2 of the main manuscript and in Tables~\ref{tab:perf-continuous} and \ref{tab:perf-binary} below. The code used to run SLAPNAP for each bnAb regimen is available on \href{https://www.github.com/bdwilliamson/clinical_slapnap}{GitHub}.
 
 \section{Simulation: Using auxiliary response variables reduces estimation variance}\label{sec:var_reduce}
 \subsection{Continuous outcome}
 The simplest case for examining variance reductions is in the case of a continuous outcome (quantitative IC$_{80}$). The results from SLAPNAP runs predicting (estimated) IC$_{80}$ for each bnAb or bnAb regimen in Table 1 of ``Super Learner Prediction of NAb Panels (SLAPNAP) repository for combination monoclonal broadly neutralizing antibody HIV prevention research'' are presented in the second column of Table~\ref{tab:perf-continuous}. We define estimated IC$_{80}$ for $J$ bnAbs according to estimated $\text{IC}_{80} = \left(\sum_{j=1}^J \text{IC}_{80,j}^{-1}\right)^{-1}$.
 
-For this simulation, for each bnAb in Table~\ref{tab:perf-continuous}, we denote by $W$ the $\log_{10}$ proteomic antibody resistance (PAR) score obtained from SLAPNAP and by $Y$ the $\log_{10}$ IC$_{80}$ readout. The untransformed PAR score is an estimator of $IC_{80}$ in this case. We suppose that $(W,Y) \sim N(\mu, \Sigma)$, where $\mu = (\mu_1, \mu_2)$ is a mean vector and $\Sigma = \begin{bmatrix} \Sigma_{11} & \Sigma_{12} \\ \Sigma_{21} & \Sigma_{22} \end{bmatrix}$ is a covariance matrix. For simplicity, we set $\mu_1 = \mu_2 = \mu^*$, with $\mu^*$ the mean $\log_{10}$ IC$_{80}$ value in the CATNAP data \citep{yoon2015} for the specified bnAb (or bnAb regimen), and set $\Sigma_{11} = \Sigma_{22} = \Sigma^*$, with $\Sigma^*$ the variance of $\log_{10}$ IC$_{80}$ in the CATNAP data for the specified bnAb (or bnAb regimen). Under this model, we can write
+For this simulation, for each bnAb in Table~\ref{tab:perf-continuous}, we denote by $W$ the $\log_{10}$ proteomic antibody resistance (PAR) score obtained from SLAPNAP and by $Y$ the $\log_{10}$ (estimated) IC$_{80}$ readout. The untransformed PAR score is an estimator of $IC_{80}$ in this case. We suppose that $(W,Y) \sim N(\mu, \Sigma)$, where
+$$\mu = (\mu_1, \mu_2) \text{ and } \Sigma = \begin{bmatrix} \Sigma_{11} & \Sigma_{12} \\ \Sigma_{21} & \Sigma_{22} \end{bmatrix}$$ are the mean vector and covariance matrix, respectively. For simplicity, we set $\mu_1 = \mu_2 = \mu^*$, with $\mu^*$ the mean $\log_{10}$ IC$_{80}$ value in the CATNAP data \citep{yoon2015} for the specified bnAb (or bnAb regimen), and set $\Sigma_{11} = \Sigma_{22} = \Sigma^*$, with $\Sigma^*$ the variance of $\log_{10}$ IC$_{80}$ in the CATNAP data for the specified bnAb (or bnAb regimen). Under this model, we can write
 \begin{align*}
     R^2 =& \ 1 - \frac{var(W)}{var(Y)} \\
     =& \ 1 - \frac{\Sigma_{12}^2\Sigma_{22}^{-1}}{\Sigma_{11}}.
 \end{align*}
-We can then generate data according to $\Sigma_{12}^2 = (1 - R^2)\Sigma_{22}\Sigma_{11}$, using the point estimates of CV-$R^2$ provided in Table~\ref{tab:perf-continuous} (and under the simplifying assumption made above, $\Sigma_{11} = \Sigma_{22} = \Sigma^*$).
+We can then generate data by specifying $\Sigma_{12}^2 = (1 - R^2)\Sigma_{22}\Sigma_{11}$, using the point estimates of CV-$R^2$ provided in Table~\ref{tab:perf-continuous} for the $R^2$ value (and under the simplifying assumption made above, $\Sigma_{11} = \Sigma_{22} = \Sigma^*$).
 
-For each bnAb under consideration, we generate 1000 random datasets according to the following specification:
+For each bnAb or bnAb regimen under consideration, we generate 1000 random datasets according to the following specification:
 \begin{enumerate}
-    \item We generate $n = 1000$ iid copies $(W_i, Y_i) \sim N(\mu^*, \Sigma^*)$, where again $Y$ denotes the $\log_{10}$ IC$_{80}$ values and $W$ denotes the corresponding $\log_{10}$ PAR scores. We truncate the upper limit of $Y$ at 1 (equivalent to an IC$_{80}$ of 10). We have found that IC$_{80} > 10$ mcg/ml indicates that a virus is resistant to the bnAb (regimen). Thus, this cutoff provides the key information for discriminating viruses above a cutoff of 10, and our interest is in discriminating viruses below this cutoff.
+    \item We generate $n = 1000$ iid copies $(W_i, Y_i) \sim N(\mu^*, \Sigma^*)$, where again $Y$ denotes the $\log_{10}$ (estimated) IC$_{80}$ values and $W$ denotes the corresponding $\log_{10}$ PAR scores. We truncate the upper limit of $Y$ at 1 (equivalent to an IC$_{80}$ of 10). We have found that IC$_{80} > 10$ mcg/ml indicates that a virus is resistant to the bnAb (regimen). Thus, this cutoff provides the key information for discriminating viruses above a cutoff of 10, and our interest is in discriminating viruses below this cutoff.
     \item We then generate $\epsilon \times 100$\% additional $\log_{10}$ PAR scores from this same distribution and suppress the IC$_{80}$ measurement, where $\epsilon \in \{0.5, 1, 2\}$.
 \end{enumerate}
 We use the variable $R$ to indicate whether $Y$ was observed or not; $R_i = 1$ implies that $Y_i$ was observed. The final dataset is then $(W, R, RY)$. Note that in this example, $\lambda \equiv \lambda(w) = P(R = 1 \mid W = w) = P(R = 1)$, since observing $Y$ is independent of the PAR score. We will generate 3000 datasets $(W, R, RY)$ according to this specification. We will save 1000 datasets for $\epsilon = 2$, and then randomly delete observations to create the datasets for analysis of $\epsilon \in \{0.5, 1\}$.
@@ -130,9 +132,9 @@ We then compute the Monte-Carlo variance of the estimated means $\theta_{n,1}$ a
     \label{tab:perf-binary}
 \end{table}
 
-We use a similar approach for binary outcomes to the approach outlined in the previous section. We now denote by $Y$ the indicator that IC$_{80} < 1$, and denote by $W$ the logit PAR score. In this setting, where we are predicting a binary outcome, the (untransformed) PAR score for a given pseudovirus is the predicted probability that the pseudovirus has IC$_{80} < 1$ based on the AA sequence, and thus lies in $[0,1]$; the logit PAR score then lies in $(-\infty, \infty)$. We suppose that $Y \sim Bern(p)$, where $p$ is the sample proportion for each bnAb in the CATNAP data, and that $W \mid Y = y \sim N(\mu_y, \sigma^2_y)$. Based on this specification, we can write (for two iid samples $(W_1, Y_1)$ and $(W_2, Y_2)$)
+We use a similar approach for binary outcomes to the approach outlined in the previous section. We now denote by $Y$ the indicator that (estimated) IC$_{80} < 1$, and denote by $W$ the logit PAR score. In this setting, where we are predicting a binary outcome, the (untransformed) PAR score for a given pseudovirus is the predicted probability that the pseudovirus has (estimated) IC$_{80} < 1$ based on the AA sequence, and thus lies in $[0,1]$; the logit PAR score then lies in $(-\infty, \infty)$. We suppose that $Y \sim Bern(p)$, where $p$ is the sample proportion for each bnAb in the CATNAP data, and that $W \mid Y = y \sim N(\mu_y, \sigma^2_y)$. Based on this specification, we can write (for two iid samples $(W_1, Y_1)$ and $(W_2, Y_2)$)
 \begin{align*}
-    AUC =& P(W_1 < W_2 \mid Y_1 = 0, Y_2 = 1) \\
+    AUC =& \ P(W_1 < W_2 \mid Y_1 = 0, Y_2 = 1) \\
     =& \ P(W_2 - W_1 > 0 \mid Y_1 = 0, Y_2 = 1);
 \end{align*}
 setting $Z = W_2 - W_1$, we see that conditional on $(Y_1, Y_2)$, $Z$ has a normal distribution with mean $\mu_1 - \mu_0$ and variance $\sigma^2_0 + \sigma^2_1$. Thus,
@@ -154,7 +156,7 @@ For each bnAb regimen and outcome considered in Tables~\ref{tab:perf-continuous}
   \item Estimate $E(Y \mid W)$ using the data input to SLAPNAP and the SLAPNAP predictions $w = f_n(\ell)$ based on the CATNAP data; denote the predictor $g_n: w \mapsto g_n(w)$, as in Section~\ref{sec:var_reduce} (for continuous outcomes, use linear regression; for binary outcomes, use logistic regression).
   \item For each country $c$ with at least 30 pseudoviruses in CATNAP:
   \begin{enumerate}
-    \item Let $X_c$ denote the combined CATNAP and LANL data from this country, let $Y_c$ denote the observed $\log_{10} \text{IC}_{80}$ or indicator that IC$_{80} < 1$, and let $R_c$ denote the binary vector of whether each sequence was observed in CATNAP;
+    \item Let $X_c$ denote the combined CATNAP and LANL data from this country, let $Y_c$ denote the observed $\log_{10} \text{(estimated) IC}_{80}$ or indicator that (estimated) IC$_{80} < 1$, and let $R_c$ denote the binary vector of whether each sequence was observed in CATNAP;
     \item Obtain predictions $W_c$ based on the SLAPNAP predictor $f_n$ and the Env sequence data $X_c$. Set $D_c = (W_c, R_c, R_cY_c)$;
     \item Obtain predictions $g_n(W_c)$ based on the regression estimator $g_n$ and the country-specific predictions;
     \item Estimate $\lambda_c = \#\{\text{sequences in CATNAP}\} / \#\{\text{sequences in LANL}\}$;
@@ -166,11 +168,11 @@ For each bnAb regimen and outcome considered in Tables~\ref{tab:perf-continuous}
     \item Compute the relative efficiency as the ratio of the squared non-augmented CI width to the squared augmented CI width.
   \end{enumerate}
 \end{enumerate}
-We display the results in a two-row plot, with the rows corresponding to continuous IC$_{80}$ and the binary indicator that IC$_{80} < 1$. The horizontal axis of each plot is the proportion of additional information in LANL compared to CATNAP, defined as $(\#\{\text{sequences in LANL}\} - \#\{\text{sequences in CATNAP}\}) / \#\{\text{sequences in LANL}\}$; the vertical axis is the relative efficiency, defined as the ratio of the squared CI width of the non-augmented estimator to the squared CI width of the augmented estimator.
+We display the results in a two-row plot, with the rows corresponding to continuous (estimated) IC$_{80}$ and the binary indicator that (estimated) IC$_{80} < 1$. The horizontal axis of each plot is the proportion of additional information in LANL compared to CATNAP, defined as $$(\#\{\text{sequences in LANL}\} - \#\{\text{sequences in CATNAP}\}) / \#\{\text{sequences in LANL}\};$$ the vertical axis is the relative efficiency, defined as the ratio of the squared CI width of the non-augmented estimator to the squared CI width of the augmented estimator.
 
 \section{Simulation: Sieve analysis}
 
-The goal of this simulation is to see if SLAPNAP improves sieve analysis; in particular, we want to see if using SLAPNAP results in improved power for detecting sieve effects. For simplicity, we will use VRC01 to define residues that are sensitive or resistant for this simulation, and consider an Antibody Mediated Prevention Trials (AMP)-like design with only the high-dose arm. In this simulation, we assume that we are using data from a trial assessing the prevention efficacy of a combination bnAb regimen $R$ (involving a VRC01-type bnAb) that is expected to have higher prevention efficacy than that observed in AMP.
+The goal of this simulation is to see if SLAPNAP improves sieve analysis; in particular, we want to see if using SLAPNAP results in improved power for detecting sieve effects. For simplicity, we will use VRC01 to define residues that are sensitive or resistant for this simulation, and consider an Antibody Mediated Prevention Trials (AMP)-like design with only the high-dose arm \citep{corey2021}. In this simulation, we assume that we are using data from a trial assessing the prevention efficacy of a combination bnAb regimen $R$ (involving a VRC01-type bnAb) that is expected to have higher prevention efficacy than that observed in AMP.
 
 Suppose that we randomly assign study participants in a 1:1 allocation to placebo or the combination regimen $R$, letting $A \in \{0,1\}$ denote the treatment assignment (0 = placebo, 1 = assignment to $R$). Suppose further that each participant in the trial has an underlying time to HIV-1 infection diagnosis (denoted by $T$), and a corresponding genotype for the infecting HIV-1 virus. We let $S = (S_1, \ldots, S_J)$ denote a binary indicator vector, where $S_j$ is the indicator that the Env sequence has the putative sensitive residue present at amino acid (AA) position $j$ in the Env protein, and $J$ is the number of HXB2 positions in the Env protein that exhibit sufficient residue variability. We define sufficient residue variability at a given position by at least 4 primary endpoint cases from AMP having a sequence with a minority residue at that position, pooled over both AMP trials (harmonized with the AMP sieve analysis). Based on AMP, there are 414 AA sites that exhibit sufficient variability (i.e., $J = 414$). More specifically, we assume that
 \begin{align*}
@@ -180,10 +182,12 @@ Suppose that we randomly assign study participants in a 1:1 allocation to placeb
 We assume here that $S_1, \ldots, S_J$ are mutually independent; while this is not true in general due to covariability of AA positions, this fact does not impact the simulation design, as we make clear below. In Table~\ref{tab:sens}, we list positions in the Env gp120 region identified as important for the AMP sieve analysis with enough variability in the AMP data, along with the corresponding sensitive genotype (residue). We define $\gamma_{0,j}$ to be the proportion of AMP placebo-arm participants with the putative sensitive residue at AA position $j$. Table~\ref{tab:sens} contains the values of $\gamma_{0,j}$ for the pre-identified positions. For positions in gp120 outside of this list of pre-identified positions, we selected a `putative sensitive residue' by identifying the residue observed to be most frequent among VRC01-sensitive viruses vs. VRC01-resistant viruses in CATNAP, and then defined the corresponding $\gamma_{0,j}$ as the proportion of this residue among AMP placebo-arm participants.
 
 \begin{table}
+  \centering
   \caption{HXB2-reference position in HIV-1 Env gp120 identified as being important for predicting sensitivity to VRC01, along with the putative sensitive residue at the given position and the proportion of AMP trial placebo arm participants with the putative sensitive residue at the position.}
   \label{tab:sens}
   \begin{tabular}{lll}
-    HXB2 position & Putative sensitive residue & Prop. AMP placebo participants with sensitive residue ($\gamma_{0,j}$)\\
+    HXB2 position & Putative sensitive residue & Prop. AMP placebo participants \\
+                  &                            & with sensitive residue ($\gamma_{0,j}$)\\
     \hline
     60 & A & 0.852 \\
     142 & T & 0.173 \\

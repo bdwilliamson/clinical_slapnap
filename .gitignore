@@ -24,3 +24,4 @@ dat/*
 *.synctex.gz
 *.bbl
 *.blg
+*.out
