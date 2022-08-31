@@ -25,3 +25,5 @@ dat/*
 *.bbl
 *.blg
 *.out
+
+*.zip

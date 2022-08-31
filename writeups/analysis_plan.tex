@@ -16,6 +16,7 @@
 \usepackage{algorithm} % algs
 \algrenewcommand\algorithmicindent{0.4em}
 \usepackage[english]{isodate} % nice date
+\usepackage{siunitx} % SI units
 \cleanlookdateon
 \newtheorem{lemma}{Lemma}
 \newtheorem{theorem}{Theorem}
@@ -48,20 +49,20 @@ This document describes the planned data analyses and simulations for the manusc
 
 The analyses address the following goals:
 \begin{enumerate}
-    \item \textit{(data analysis)} obtain proteomic antibody resistance (PAR) scores and estimate predictive performance of SLAPNAP for different bnAb regimens;
-    \item \textit{(simulation)} determine if using external data (i.e., Env sequences) results in variance reduction for estimating the mean $\log_{10}$ IC$_{80}$ value and/or the probability that IC$_{80} < 1$;
-    \item \textit{(data analysis)} determine if using Env sequences from the Los Alamos National Laboratory results in variance reduction for estimating the mean $\log_{10}$ IC$_{80}$ value and/or the probability that IC$_{80} < 1$ in different countries, compared to using data from CATNAP \citep{yoon2015} alone; and
-    \item \textit{(simulation)} determine if using SLAPNAP \citep{williamson2021} can improve sieve analysis.
+    \item \textit{(data analysis)} obtain proteomic antibody resistance (PAR) scores and estimate predictive performance of SLAPNAP \citep{williamson2021} for several bnAb regimens;
+    \item \textit{(simulation)} determine if using external data (i.e., Env sequences) results in variance reduction for estimating the mean $\log_{10}$ IC$_{80}$ value and/or the probability that IC$_{80} < 1$ \si{\ug}/ml;
+    \item \textit{(data analysis)} determine if using Env sequences from the Los Alamos National Laboratory (LANL) results in variance reduction for estimating the mean $\log_{10}$ IC$_{80}$ value and/or the probability that IC$_{80} < 1$ \si{\ug}/ml for several bnAb regimens in several countries, compared to using data from the Compile, Analyze and Tally NAb Panels (CATNAP) database \citep{yoon2015} alone; and
+    \item \textit{(simulation)} determine if using SLAPNAP can improve sieve analysis.
 \end{enumerate}
-In the next sections, we describe our proposed approach to answering these questions. All analysis code is available on GitHub at \url{https://www.github.com/bdwilliamson/clinical\_slapnap}.
+In the next sections, we describe our proposed approach to answering these questions. All analysis code is available on GitHub at \url{https://www.github.com/bdwilliamson/clinical\_slapnap} and at Zenodo \citep{williamson2022}.
 
 \section{Data analysis: Obtaining PAR scores and estimating prediction performance}\label{sec:par_scores}
 
-For this analysis, we use SLAPNAP \citep{williamson2021} for each bnAb regimen provided in Table 1 of the main manuscript, providing both a predictor of the mean $\log_{10}$ IC$_{80}$ value and a predicted probability that IC$_{80} < 1$ for each bnAb regimen. The estimated prediction performance of the resulting PAR scores is provided in Table 2 of the main manuscript and in Tables~\ref{tab:perf-continuous} and \ref{tab:perf-binary} below. The code used to run SLAPNAP for each bnAb regimen is available on \href{https://www.github.com/bdwilliamson/clinical_slapnap}{GitHub}.
+For this analysis, we use SLAPNAP \citep{williamson2021} for each bnAb regimen provided in Table 1 of the main manuscript, providing both a predictor of the mean $\log_{10}$ IC$_{80}$ value and a predicted probability that IC$_{80} < 1$ \si{\ug}/ml for each bnAb regimen. The estimated prediction performance of the resulting PAR scores is provided in Table 2 of the main manuscript and in Tables~\ref{tab:perf-continuous} and \ref{tab:perf-binary} below. The code used to run SLAPNAP for each bnAb regimen is available on \href{https://www.github.com/bdwilliamson/clinical_slapnap}{GitHub}.
 
 \section{Simulation: Using auxiliary response variables reduces estimation variance}\label{sec:var_reduce}
 \subsection{Continuous outcome}
-The simplest case for examining variance reductions is in the case of a continuous outcome (quantitative IC$_{80}$). The results from SLAPNAP runs predicting (estimated) IC$_{80}$ for each bnAb or bnAb regimen in Table 1 of ``Super Learner Prediction of NAb Panels (SLAPNAP) repository for combination monoclonal broadly neutralizing antibody HIV prevention research'' are presented in the second column of Table~\ref{tab:perf-continuous}. We define estimated IC$_{80}$ for $J$ bnAbs according to estimated $\text{IC}_{80} = \left(\sum_{j=1}^J \text{IC}_{80,j}^{-1}\right)^{-1}$.
+The simplest case for examining variance reductions is in the case of a continuous outcome (quantitative IC$_{80}$). The results from SLAPNAP runs predicting (estimated) IC$_{80}$ for each bnAb or bnAb regimen in Table 1 of the main manuscript are presented in the second column of Table~\ref{tab:perf-continuous}. We define estimated IC$_{80}$ for $J$ bnAbs according to estimated $\text{IC}_{80} = \left(\sum_{j=1}^J \text{IC}_{80,j}^{-1}\right)^{-1}$.
 
 For this simulation, for each bnAb in Table~\ref{tab:perf-continuous}, we denote by $W$ the $\log_{10}$ proteomic antibody resistance (PAR) score obtained from SLAPNAP and by $Y$ the $\log_{10}$ (estimated) IC$_{80}$ readout. The untransformed PAR score is an estimator of $IC_{80}$ in this case. We suppose that $(W,Y) \sim N(\mu, \Sigma)$, where
 $$\mu = (\mu_1, \mu_2) \text{ and } \Sigma = \begin{bmatrix} \Sigma_{11} & \Sigma_{12} \\ \Sigma_{21} & \Sigma_{22} \end{bmatrix}$$ are the mean vector and covariance matrix, respectively. For simplicity, we set $\mu_1 = \mu_2 = \mu^*$, with $\mu^*$ the mean $\log_{10}$ IC$_{80}$ value in the CATNAP data \citep{yoon2015} for the specified bnAb (or bnAb regimen), and set $\Sigma_{11} = \Sigma_{22} = \Sigma^*$, with $\Sigma^*$ the variance of $\log_{10}$ IC$_{80}$ in the CATNAP data for the specified bnAb (or bnAb regimen). Under this model, we can write
@@ -78,15 +79,19 @@ For each bnAb or bnAb regimen under consideration, we generate 1000 random datas
 \end{enumerate}
 We use the variable $R$ to indicate whether $Y$ was observed or not; $R_i = 1$ implies that $Y_i$ was observed. The final dataset is then $(W, R, RY)$. Note that in this example, $\lambda \equiv \lambda(w) = P(R = 1 \mid W = w) = P(R = 1)$, since observing $Y$ is independent of the PAR score. We will generate 3000 datasets $(W, R, RY)$ according to this specification. We will save 1000 datasets for $\epsilon = 2$, and then randomly delete observations to create the datasets for analysis of $\epsilon \in \{0.5, 1\}$.
 
-For each random dataset, our goal is to estimate the mean value of $Y$, $\theta \equiv E(Y)$; we will compare estimating $\theta$ among those pseudoviruses with $R_i = 1$ (using $n$ observations) to estimating $\theta$ using all pseudoviruses with a $\log_{10}$ PAR score (using $(1+\epsilon)n$ observations). We estimate the mean using the method of \citet{rotnitzky1995}, and use code developed by \citet{gilbert2014}. In particular, the semiparametric efficient estimator of $\theta$ based on a sample of size $n$ (denoted by $\theta_n$) solves the estimating equation $\sum_{i=1}^n U_i(\theta, \lambda_i) = 0$, where
+For each randomly sampled dataset, our goal is to estimate the mean value of $Y$, $\theta \equiv E(Y)$; we will compare estimating $\theta$ among those pseudoviruses with $R_i = 1$ (using $n$ observations) to estimating $\theta$ using all pseudoviruses with a $\log_{10}$ PAR score (using $(1+\epsilon)n$ observations). We first consider an estimator of $\theta$ that ignores those observations with $R_i = 0$:
+\begin{align}\label{eq:sample_mean}
+  \theta_{n,1} := \frac{1}{n}\sum_{i=1}^n R_i Y_i.
+\end{align}
+We incorporate auxiliary information in estimating the mean using the method of \citet{rotnitzky1995}, and use code developed by \citet{gilbert2014}. In particular, the semiparametric efficient estimator of $\theta$ based on a sample of size $n$ (denoted by $\theta_{n,2}$) solves the estimating equation $\sum_{i=1}^n U_i(\theta, \lambda_i) = 0$, where
 \begin{align*}
     U_i(\theta, \lambda_i) =& \ \frac{R_i}{\lambda_i}(Y_i - \theta) - \frac{(R_i - \lambda_i)}{\lambda_i}\{E(Y \mid W_i) - \theta\}.
 \end{align*}
-We estimate $E(Y \mid W_i)$ using ordinary least squares, denoting our estimator as $g_n: w \mapsto g_n(w)$, and then use the estimating equation above to obtain an estimator of $\theta$. In our case, a consistent estimator of $\lambda$ is $\lambda_{n,i} = n / \{(1 + \epsilon)n\}$ for all $i$. In this special case, a closed form solution for $\theta_n$ exists:
+We estimate $E(Y \mid W_i)$ using ordinary least squares, denoting our estimator as $g_n: w \mapsto g_n(w)$, and then use the estimating equation above to obtain an estimator of $\theta$. In our case, a consistent estimator of $\lambda$ is $\lambda_{n,i} = n / \{(1 + \epsilon)n\}$ for all $i$. In this special case, a closed form solution for $\theta_{n,2}$ exists:
 \begin{align}\label{eq:aug_mean}
-    \theta_n = \frac{1}{n\lambda}\sum_{i=1}^nR_i(Y_i - g_n(W_i)) + \frac{1}{n}\sum_{i=1}^n g_n(W_i)
+    \theta_{n,2} = \frac{1}{n\lambda}\sum_{i=1}^nR_i(Y_i - g_n(W_i)) + \frac{1}{n}\sum_{i=1}^n g_n(W_i)
 \end{align}
- We obtain two estimators, $\theta_{n,1}$ and $\theta_{n,2}$, corresponding to using only the data with observed outcome (i.e., $R_i = 1$, which is simply the sample average of $Y$) and using the additional data, respectively.
+ % We obtain two estimators, $\theta_{n,1}$ and $\theta_{n,2}$, corresponding to using only the data with observed outcome (i.e., $R_i = 1$, which is simply the sample average of $Y$) and using the additional data, respectively.
 
 We then compute the Monte-Carlo variance of the estimated means $\theta_{n,1}$ and $\theta_{n,2}$ over the 1000 replications, and estimate the relative efficiency of using the additional pseudoviruses by taking the ratio of the Monte-Carlo variance ignoring the additional pseudoviruses (the Monte-Carlo variance of $\theta_{n,1}$) to the Monte-Carlo variance using the additional pseudoviruses (the Monte-Carlo variance of $\theta_{n,2}$).
 
@@ -114,7 +119,7 @@ We then compute the Monte-Carlo variance of the estimated means $\theta_{n,1}$ a
 
 \begin{table}
     \centering
-    \caption{Prediction performance for each broadly neutralizing antibody (bnAb) or bnAb regimen from Table 1 of the SLAPNAP clinical manuscript. For each SLAPNAP run, performance is measured using cross-validated AUC (CV-AUC) for (estimated) sensitivity, defined as (estimated) IC$_{80} < 1$ $\mu$g/ml, where for $J$ bnAbs, estimated IC$_{80} = \left(\sum_{j=1}^J \text{IC}_{80,j}^{-1}\right)^{-1}$; and multiple sensitivity, defined as $\text{IC}_{80,j} < 1$ for at least 1 bnAb (where applicable).}
+    \caption{Prediction performance for each broadly neutralizing antibody (bnAb) or bnAb regimen from Table 1 of the SLAPNAP clinical manuscript. For each SLAPNAP run, performance is measured using cross-validated AUC (CV-AUC) for (estimated) sensitivity, defined as (estimated) IC$_{80} < 1$ \si{\ug}/ml, where for $J$ bnAbs, estimated IC$_{80} = \left(\sum_{j=1}^J \text{IC}_{80,j}^{-1}\right)^{-1}$; and multiple sensitivity, defined as $\text{IC}_{80,j} < 1$ for at least 1 bnAb (where applicable).}
     \begin{tabular}{l|cc}
         & \multicolumn{2}{c}{Prediction performance} \\
         bnAb (or bnAb regimen) & (Estimated) Sensitivity & Multiple Sensitivity \\
@@ -132,7 +137,7 @@ We then compute the Monte-Carlo variance of the estimated means $\theta_{n,1}$ a
     \label{tab:perf-binary}
 \end{table}
 
-We use a similar approach for binary outcomes to the approach outlined in the previous section. We now denote by $Y$ the indicator that (estimated) IC$_{80} < 1$, and denote by $W$ the logit PAR score. In this setting, where we are predicting a binary outcome, the (untransformed) PAR score for a given pseudovirus is the predicted probability that the pseudovirus has (estimated) IC$_{80} < 1$ based on the AA sequence, and thus lies in $[0,1]$; the logit PAR score then lies in $(-\infty, \infty)$. We suppose that $Y \sim Bern(p)$, where $p$ is the sample proportion for each bnAb in the CATNAP data, and that $W \mid Y = y \sim N(\mu_y, \sigma^2_y)$. Based on this specification, we can write (for two iid samples $(W_1, Y_1)$ and $(W_2, Y_2)$)
+We use a similar approach for binary outcomes to the approach outlined in the previous section. We now denote by $Y$ the indicator that (estimated) IC$_{80} < 1$ \si{\ug}/ml, and denote by $W$ the logit PAR score. In this setting, where we are predicting a binary outcome, the (untransformed) PAR score for a given pseudovirus is the predicted probability that the pseudovirus has (estimated) IC$_{80} < 1$ \si{\ug}/ml based on the AA sequence, and thus lies in $[0,1]$; the logit PAR score then lies in $(-\infty, \infty)$. We suppose that $Y \sim Bern(p)$, where $p$ is the sample proportion for each bnAb in the CATNAP data, and that $W \mid Y = y \sim N(\mu_y, \sigma^2_y)$. Based on this specification, we can write (for two iid samples $(W_1, Y_1)$ and $(W_2, Y_2)$)
 \begin{align*}
     AUC =& \ P(W_1 < W_2 \mid Y_1 = 0, Y_2 = 1) \\
     =& \ P(W_2 - W_1 > 0 \mid Y_1 = 0, Y_2 = 1);
@@ -144,7 +149,7 @@ setting $Z = W_2 - W_1$, we see that conditional on $(Y_1, Y_2)$, $Z$ has a norm
 \end{align*}
 where $\Phi$ denotes the standard normal cdf. Thus, setting $\sigma^2_1 = \sigma^2_0 = 0.005$ and $\mu_0 = -0.32$ (corresponding to a mean PAR score of 0.42 among those with $Y = 0$), we can generate $n$ iid copies of $W$ and $Y$ with $R = 1$, and generate $\epsilon \times 100$\% iid copies of $W$ with $R = 0$ (the additional logit PAR scores). The point estimates of AUC are provided in Table~\ref{tab:perf-binary}. Again, the full data are $(1 + \epsilon)n$ iid copies of $(W_i, R_i, R_iY_i)$.
 
-For each random dataset, our goal is now to estimate $\theta = E(Y) = P(\text{IC}_{80} < 1)$; we will again compare estimating $\theta$ among those pseudoviruses with $R_i = 1$ (using $n$ observations) to estimating $\theta$ using all pseudoviruses with a logit PAR score (using $(1+\epsilon)n$ observations). We use an identical estimation procedure to that described in the previous section, with one exception: we use a logistic regression model to estimate $E(Y \mid W_i)$. We then compute the Monte-Carlo variance of the estimated means over the 1000 replications as before, and estimate the relative efficiency of using the additional pseudoviruses by taking the ratio of the Monte-Carlo variance ignoring the additional pseudoviruses to the Monte-Carlo variance using the additional pseudoviruses.
+For each randomly sampled dataset, our goal is now to estimate $\theta = E(Y) = P(\text{IC}_{80} < 1\text{ \si{\ug}/ml})$; we will again compare estimating $\theta$ among those pseudoviruses with $R_i = 1$ (using $n$ observations) to estimating $\theta$ using all pseudoviruses with a logit PAR score (using $(1+\epsilon)n$ observations). We use an identical estimation procedure to that described in the previous section, with one exception: we use a logistic regression model to estimate $E(Y \mid W_i)$. We then compute the Monte-Carlo variance of the estimated means over the 1000 replications as before, and estimate the relative efficiency of using the additional pseudoviruses by taking the ratio of the Monte-Carlo variance ignoring the additional pseudoviruses to the Monte-Carlo variance using the additional pseudoviruses.
 
 \section{Data analysis: Country-specific variance reduction}
 
@@ -156,19 +161,21 @@ For each bnAb regimen and outcome considered in Tables~\ref{tab:perf-continuous}
   \item Estimate $E(Y \mid W)$ using the data input to SLAPNAP and the SLAPNAP predictions $w = f_n(\ell)$ based on the CATNAP data; denote the predictor $g_n: w \mapsto g_n(w)$, as in Section~\ref{sec:var_reduce} (for continuous outcomes, use linear regression; for binary outcomes, use logistic regression).
   \item For each country $c$ with at least 30 pseudoviruses in CATNAP:
   \begin{enumerate}
-    \item Let $X_c$ denote the combined CATNAP and LANL data from this country, let $Y_c$ denote the observed $\log_{10} \text{(estimated) IC}_{80}$ or indicator that (estimated) IC$_{80} < 1$, and let $R_c$ denote the binary vector of whether each sequence was observed in CATNAP;
+    \item Let $X_c$ denote the combined CATNAP and LANL data from this country, let $Y_c$ denote the observed $\log_{10} \text{(estimated) IC}_{80}$ or indicator that (estimated) IC$_{80} < 1$ \si{\ug}/ml, and let $R_c$ denote the binary vector of whether each sequence was observed in CATNAP;
     \item Obtain predictions $W_c$ based on the SLAPNAP predictor $f_n$ and the Env sequence data $X_c$. Set $D_c = (W_c, R_c, R_cY_c)$;
     \item Obtain predictions $g_n(W_c)$ based on the regression estimator $g_n$ and the country-specific predictions;
     \item Estimate $\lambda_c = \#\{\text{sequences in CATNAP}\} / \#\{\text{sequences in LANL}\}$;
-    \item Obtain estimate $\theta_{n,1}$ of $\theta$ (the mean outcome value, as in Section~\ref{sec:var_reduce}) using only data in CATNAP;
+    \item Obtain estimate $\theta_{n,1}$ of $\theta$ (the mean outcome value, as in Section~\ref{sec:var_reduce}) using only data in CATNAP (Equation~\ref{eq:sample_mean});
     \item Obtain estimate $\theta_{n,2}$ of $\theta$ using data in CATNAP and LANL, using Equation~\eqref{eq:aug_mean};
     \item Obtain a non-augmented 95\% percentile bootstrap confidence interval for $\theta$: draw 5000 bootstrap datasets $\{D_{c,b}\}_{b = 1}^{5000}$. On each bootstrap dataset, use $g_n$ to predict using $W_{c,b}$, then obtain an estimate $\theta_{n,1,b}$ using data with $R_{c,b} = 1$, and take the 2.5th and 97.5th percentiles of $\theta_{n,1,b}$;
     \item Obtain an augmented 95\% percentile bootstrap confidence interval for $\theta$: draw 5000 bootstrap datasets $\{D_{c,b}\}_{b = 1}^{5000}$. On each bootstrap dataset, use $g_n$ to predict using $W_{c,b}$, then obtain an estimate $\theta_{n,2,b}$ using the entire dataset, and take the 2.5th and 97.5th percentiles of $\theta_{n,2,b}$;
     \item Compute the width of each 95\% CI;
     \item Compute the relative efficiency as the ratio of the squared non-augmented CI width to the squared augmented CI width.
+    \item Compute the relative efficiency bound, $$\#\{\text{sequences available in LANL and CATNAP}\} / \#\{\text{sequences in CATNAP}\};$$
+    \item Compute the bounded relative efficiency, defined as the minimum of (j) and (k).
   \end{enumerate}
 \end{enumerate}
-We display the results in a two-row plot, with the rows corresponding to continuous (estimated) IC$_{80}$ and the binary indicator that (estimated) IC$_{80} < 1$. The horizontal axis of each plot is the proportion of additional information in LANL compared to CATNAP, defined as $$(\#\{\text{sequences in LANL}\} - \#\{\text{sequences in CATNAP}\}) / \#\{\text{sequences in LANL}\};$$ the vertical axis is the relative efficiency, defined as the ratio of the squared CI width of the non-augmented estimator to the squared CI width of the augmented estimator.
+We display the results in a two-row plot, with the rows corresponding to continuous (estimated) IC$_{80}$ and the binary indicator that (estimated) IC$_{80} < 1$ \si{\ug}/ml. The horizontal axis of each plot is the proportion of additional information in LANL compared to CATNAP, defined as $$(\#\{\text{sequences in LANL}\} - \#\{\text{sequences in CATNAP}\}) / \#\{\text{sequences in LANL}\};$$ the vertical axis is the bounded relative efficiency.
 
 \section{Simulation: Sieve analysis}
 
@@ -273,7 +280,7 @@ To better understand power as a function of the effect size, we also generate da
   \end{tabular}
 \end{table}
 
-\bibliographystyle{chicago}
+\bibliographystyle{plainnat}
 \bibliography{pubs}
 
 \end{document}
