@@ -176,9 +176,11 @@ full_plot_b <- plot_grid(
   lgnd_b, nrow = 1, ncol = 3, rel_widths = c(.05, 1, .6)
 )
 
-ggsave(filename = here::here("R_output", "sim_1b_rel_eff_bounded.png"),
-       plot = full_plot_b,
-       width =  11.5, height = 5, units = "in")
+for (filetype in c("png", "pdf")) {
+  ggsave(filename = here::here("R_output", paste0("sim_1b_rel_eff_bounded.", filetype)),
+         plot = full_plot_b,
+         width =  11.5, height = 5, units = "in")
+}
 
 # restricting to > X sequences in CATNAP
 dodge_width <- 0.01
@@ -221,9 +223,9 @@ for (i in 1:length(num_sequences)) {
     ),
     lgnd_b_numseq, nrow = 1, ncol = 3, rel_widths = c(.05, 1, .6)
   )
-
-  ggsave(filename = here::here("R_output", paste0("sim_1b_rel_eff_bounded_greater", num_sequences[i],".png")),
-         plot = full_plot_b_numseq,
-         width =  11.5, height = 5, units = "in")
-
+  for (filetype in c("png", "pdf")) {
+    ggsave(filename = here::here("R_output", paste0("sim_1b_rel_eff_bounded_greater", num_sequences[i],".", filetype)),
+           plot = full_plot_b_numseq,
+           width =  11.5, height = 5, units = "in")
+  }
 }

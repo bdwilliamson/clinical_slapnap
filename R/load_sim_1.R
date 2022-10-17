@@ -81,7 +81,8 @@ full_plot <- plot_grid(
 #                      breaks = NULL, labels = NULL)) +
 #   facet_grid(rows = vars(outcome), cols = vars(percentage), labeller = label_both,
 #              scales = "free")
-
-ggsave(filename = here::here("R_output", "sim_1_rel_eff.png"),
-       plot = full_plot, 
-       width = 9.5, height = 5, units = "in")
+for (filetype in c("png", "pdf")) {
+  ggsave(filename = here::here("R_output", paste0("sim_1_rel_eff.", filetype)),
+         plot = full_plot, 
+         width = 9.5, height = 5, units = "in")
+}
