@@ -31,21 +31,23 @@
 \DeclareMathOperator*{\argmin}{argmin}
 \DeclareMathOperator*{\logit}{logit}
 
-\author{Brian D. Williamson$^{1,2}$ \& Peter B. Gilbert$^{2,3}$\\
-${}^1$Biostatistics Division, Kaiser Permanente Washington Health Research Institute \\
-${}^2$Vaccine and Infectious Disease Division, Fred Hutchinson Cancer Center \\
-${}^3$Department of Biostatistics, University of Washington \\
-Seattle, WA, USA
-}
-\title{Data analyses and numerical experiments for ``Super Learner Prediction of NAb Panels (SLAPNAP) repository for combination monoclonal broadly neutralizing antibody HIV prevention research'', by Williamson et al.}
+% \author{Brian D. Williamson$^{1,2}$ \& Peter B. Gilbert$^{2,3}$\\
+% ${}^1$Biostatistics Division, Kaiser Permanente Washington Health Research Institute \\
+% ${}^2$Vaccine and Infectious Disease Division, Fred Hutchinson Cancer Center \\
+% ${}^3$Department of Biostatistics, University of Washington \\
+% Seattle, WA, USA
+% }
+% \title{Data analyses and numerical experiments for ``Super Learner Prediction of NAb Panels (SLAPNAP) repository for combination monoclonal broadly neutralizing antibody HIV prevention research'', by Williamson et al.}
+\author{}
+\title{\textbf{QUANTIFICATION AND STATISTICAL ANALYSIS}}
 \date{}
 
 \begin{document}
 \maketitle
 
-\section{Introduction}
+\section*{Introduction}
 
-This document describes the planned data analyses and simulations for the manuscript ``Super Learner Prediction of NAb Panels (SLAPNAP) repository for combination monoclonal broadly neutralizing antibody HIV prevention research'', by Williamson et al.
+% Here, we describe the data analyses and simulations for the manuscript ``Super Learner Prediction of NAb Panels (SLAPNAP) repository for combination monoclonal broadly neutralizing antibody HIV prevention research'', by Williamson et al.
 
 The analyses address the following goals:
 \begin{enumerate}
@@ -56,12 +58,14 @@ The analyses address the following goals:
 \end{enumerate}
 In the next sections, we describe our proposed approach to answering these questions. All analysis code is available on GitHub at \url{https://www.github.com/bdwilliamson/clinical\_slapnap} and at Zenodo \citep{williamson2022}.
 
-\section{Data analysis: Obtaining PAR scores and estimating prediction performance}\label{sec:par_scores}
+\section*{Data analysis: \textit{SLAPNAP TOOL GIVES PAR SCORES AND ESTIMATES OF VARIABLE IMPORTANCE FOR A GIVEN BNAB REGIMEN AND VIRUS PROPORTION}}\label{sec:par_scores}
 
-For this analysis, we use SLAPNAP \citep{williamson2021} for each bnAb regimen provided in Table 1 of the main manuscript, providing both a predictor of the mean $\log_{10}$ IC$_{80}$ value and a predicted probability that IC$_{80} < 1$ \si{\ug}/ml for each bnAb regimen. The estimated prediction performance of the resulting PAR scores is provided in Table 2 of the main manuscript and in Tables~\ref{tab:perf-continuous} and \ref{tab:perf-binary} below. The code used to run SLAPNAP for each bnAb regimen is available on \href{https://www.github.com/bdwilliamson/clinical_slapnap}{GitHub}.
+For this analysis, we ran SLAPNAP \citep{williamson2021} for each bnAb regimen provided in Table 1 of the main manuscript, providing both a predictor of the mean $\log_{10}$ IC$_{80}$ value and a predicted probability that IC$_{80} < 1$ \si{\ug}/ml for each bnAb regimen. We used a Super Learner ensemble consisting of random forests \citep{breiman2001}, gradient boosted trees \citep{friedman2001}, and the elastic net \citep{zou2005}, each with varying tuning parameters; these candidate learners are described more fully in \citet{williamson2021}. In some cases, it may improve prediction performance (and reduce computation time) to re-move binary AA features with fewer than $x$ values in the minority class; this is also referred to as a minimum variability filter. For example, \citet{magaret2019} excluded binary AA features with fewer than 3 values in the minority class (i.e., the minimum variability threshold was 3). Here, we considered minimum-variability thresholds of zero and four for the AA features. The PAR scores for each bnAb regimen are the final Super Learner ensemble for predicting the outcome of interest (IC80 < 1 or quantitative IC80); the final ensemble is a convex combination of the individual candidate learners and minimum-variability screens that minimized the cross-validated risk (negative log likelihood for the binary outcomes and mean squared error for the continuous outcome). We assessed prediction performance using five-fold CV-AUC for the bina-ry outcomes and five-fold CV-R2 for the continuous outcome. We estimated intrinsic variable importance for AA features and feature groups using the difference in population AUCs for the bnAb regimens VRC07-523-LS + PGT121 and VRC07-523-LS + PGT121 + PGDM1400. 
 
-\section{Simulation: Using auxiliary response variables reduces estimation variance}\label{sec:var_reduce}
-\subsection{Continuous outcome}
+The code used to run SLAPNAP for each bnAb regimen is available on \href{https://www.github.com/bdwilliamson/clinical_slapnap}{GitHub}. The estimated prediction performance of the resulting PAR scores is provided in Table 2 of the main manuscript and in Tables~\ref{tab:perf-continuous} and \ref{tab:perf-binary} below. 
+
+\section*{Simulation: \textit{IMPROVED COMPARISONS OF BNAB REGIMENS BY SLAPNAP}}\label{sec:var_reduce}
+\subsection*{Continuous outcome}
 The simplest case for examining variance reductions is in the case of a continuous outcome (quantitative IC$_{80}$). The results from SLAPNAP runs predicting (estimated) IC$_{80}$ for each bnAb or bnAb regimen in Table 1 of the main manuscript are presented in the second column of Table~\ref{tab:perf-continuous}. We define estimated IC$_{80}$ for $J$ bnAbs according to estimated $\text{IC}_{80} = \left(\sum_{j=1}^J \text{IC}_{80,j}^{-1}\right)^{-1}$.
 
 For this simulation, for each bnAb in Table~\ref{tab:perf-continuous}, we denote by $W$ the $\log_{10}$ proteomic antibody resistance (PAR) score obtained from SLAPNAP and by $Y$ the $\log_{10}$ (estimated) IC$_{80}$ readout. The untransformed PAR score is an estimator of $IC_{80}$ in this case. We suppose that $(W,Y) \sim N(\mu, \Sigma)$, where
@@ -115,7 +119,7 @@ We then compute the Monte-Carlo variance of the estimated means $\theta_{n,1}$ a
     \label{tab:perf-continuous}
 \end{table}
 
-\subsection{Binary outcome}
+\subsection*{Binary outcome}
 
 \begin{table}
     \centering
@@ -151,7 +155,7 @@ where $\Phi$ denotes the standard normal cdf. Thus, setting $\sigma^2_1 = \sigma
 
 For each randomly sampled dataset, our goal is now to estimate $\theta = E(Y) = P(\text{IC}_{80} < 1\text{ \si{\ug}/ml})$; we will again compare estimating $\theta$ among those pseudoviruses with $R_i = 1$ (using $n$ observations) to estimating $\theta$ using all pseudoviruses with a logit PAR score (using $(1+\epsilon)n$ observations). We use an identical estimation procedure to that described in the previous section, with one exception: we use a logistic regression model to estimate $E(Y \mid W_i)$. We then compute the Monte-Carlo variance of the estimated means over the 1000 replications as before, and estimate the relative efficiency of using the additional pseudoviruses by taking the ratio of the Monte-Carlo variance ignoring the additional pseudoviruses to the Monte-Carlo variance using the additional pseudoviruses.
 
-\section{Data analysis: Country-specific variance reduction}
+\section*{Data analysis: \textit{IMPROVED COMPARISONS OF BNAB REGIMENS BY SLAPNAP}}
 
 In this analysis, we examine the variance reduction achieved by augmenting sequences with information in CATNAP with additional Env sequences from the LANL database.
 
@@ -177,7 +181,7 @@ For each bnAb regimen and outcome considered in Tables~\ref{tab:perf-continuous}
 \end{enumerate}
 We display the results in a two-row plot, with the rows corresponding to continuous (estimated) IC$_{80}$ and the binary indicator that (estimated) IC$_{80} < 1$ \si{\ug}/ml. The horizontal axis of each plot is the proportion of additional information in LANL compared to CATNAP, defined as $$(\#\{\text{sequences in LANL}\} - \#\{\text{sequences in CATNAP}\}) / \#\{\text{sequences in LANL}\};$$ the vertical axis is the bounded relative efficiency.
 
-\section{Simulation: Sieve analysis}
+\section*{Simulation: \textit{SLAPNAP IMPROVES SIEVE ANALYSIS IN BNAB EFFICACY TRIALS}}
 
 The goal of this simulation is to see if SLAPNAP improves sieve analysis; in particular, we want to see if using SLAPNAP results in improved power for detecting sieve effects. For simplicity, we will use VRC01 to define residues that are sensitive or resistant for this simulation, and consider an Antibody Mediated Prevention Trials (AMP)-like design with only the high-dose arm \citep{corey2021}. In this simulation, we assume that we are using data from a trial assessing the prevention efficacy of a combination bnAb regimen $R$ (involving a VRC01-type bnAb) that is expected to have higher prevention efficacy than that observed in AMP.
 
