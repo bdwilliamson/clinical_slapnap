@@ -18,10 +18,11 @@ results <- all_output %>%
          `PE(S230 = 0)` = factor(round(pe_0, 3),
                                  levels = pe_0_labels))
 
+point_size <- 3
 power_plot <- results %>% 
   arrange(`PE(S230 = 0)`) %>% 
   ggplot(aes(x = n, y = power, color = analysis, group = analysis, shape = analysis)) +
-  geom_point(position = position_dodge(width = 0.25)) +
+  geom_point(position = position_dodge(width = 0.25), size = point_size) +
   geom_hline(yintercept = 0.9, linetype = "dashed", color = "red") +
   geom_hline(yintercept = 0.05, linetype = "dashed", color = "red") +
   labs(y = "Empirical power", x = "n", color = "Analysis", shape = "Analysis") +

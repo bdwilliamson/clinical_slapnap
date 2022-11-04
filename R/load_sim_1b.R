@@ -5,6 +5,8 @@ library("data.table")
 library("cowplot")
 theme_set(theme_cowplot())
 
+point_size <- 3
+
 summary_statistics <- readRDS(here::here("R_output", "summary_statistics_simulation_1.rds"))
 summary_stats <- summary_statistics %>%
   mutate(datatype = ifelse(outcome == "ic80", "continuous", "binary"),
@@ -71,10 +73,11 @@ dist_catnap <- numbers_only %>%
   facet_wrap(~ bnab)
 
 # Relative efficiency
+point_size <- 3
 continuous_rel_eff_plot <- ci_widths %>%
   filter(outcome == "IC80") %>%
   ggplot(aes(x = excess_prop_lanl, y = relative_efficiency, color = bnab, shape = country)) +
-  geom_point(size = 2.5) +
+  geom_point(size = point_size) +
   scale_shape_manual(values = c(49:56)) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
   labs(y = "Relative Efficiency (ignoring vs using auxiliary sequences)",
@@ -85,7 +88,7 @@ continuous_rel_eff_plot <- ci_widths %>%
 binary_rel_eff_plot <- ci_widths %>%
   filter(outcome == "IC80 < 1") %>%
   ggplot(aes(x = excess_prop_lanl, y = relative_efficiency, color = bnab, shape = country)) +
-  geom_point(size = 2.5) +
+  geom_point(size = point_size) +
   scale_shape_manual(values = c(49:56)) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
   labs(y = "Relative Efficiency (ignoring vs using auxiliary sequences)",
@@ -143,7 +146,7 @@ dodge_height <- 0.75
 continuous_rel_eff_plot_bounded <- ci_widths %>%
   filter(outcome == "IC80") %>%
   ggplot(aes(x = excess_prop_lanl, y = bounded_relative_efficiency, color = bnab, shape = country)) +
-  geom_point(size = 2.5, position = position_jitter(height = dodge_height)) +
+  geom_point(size = point_size, position = position_jitter(height = dodge_height)) +
   scale_shape_manual(values = c(49:56)) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
   labs(y = "Relative Efficiency (ignoring vs using auxiliary sequences)",
@@ -154,7 +157,7 @@ continuous_rel_eff_plot_bounded <- ci_widths %>%
 binary_rel_eff_plot_bounded <- ci_widths %>%
   filter(outcome == "IC80 < 1") %>%
   ggplot(aes(x = excess_prop_lanl, y = bounded_relative_efficiency, color = bnab, shape = country)) +
-  geom_point(size = 2.5, position = position_jitter(width = dodge_width, height = dodge_height)) +
+  geom_point(size = point_size, position = position_jitter(width = dodge_width, height = dodge_height)) +
   scale_shape_manual(values = c(49:56)) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
   labs(y = "Relative Efficiency (ignoring vs using auxiliary sequences)",
@@ -191,7 +194,7 @@ for (i in 1:length(num_sequences)) {
   continuous_rel_eff_plot_bounded_numseq <- ci_widths %>%
     filter(outcome == "IC80", n_catnap >= num_sequences[i]) %>%
     ggplot(aes(x = excess_prop_lanl, y = bounded_relative_efficiency, color = bnab, shape = country)) +
-    geom_point(size = 2.5, position = position_jitter(height = dodge_height)) +
+    geom_point(size = point_size, position = position_jitter(height = dodge_height)) +
     scale_shape_manual(values = c(49:56)) +
     geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
     labs(y = "Relative Efficiency (ignoring vs using auxiliary sequences)",
@@ -202,7 +205,7 @@ for (i in 1:length(num_sequences)) {
   binary_rel_eff_plot_bounded_numseq <- ci_widths %>%
     filter(outcome == "IC80 < 1", n_catnap >= num_sequences[i]) %>%
     ggplot(aes(x = excess_prop_lanl, y = bounded_relative_efficiency, color = bnab, shape = country)) +
-    geom_point(size = 2.5, position = position_jitter(width = dodge_width, height = dodge_height)) +
+    geom_point(size = point_size, position = position_jitter(width = dodge_width, height = dodge_height)) +
     scale_shape_manual(values = c(49:56)) +
     geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
     labs(y = "Relative Efficiency (ignoring vs using auxiliary sequences)",
@@ -223,8 +226,13 @@ for (i in 1:length(num_sequences)) {
     ),
     lgnd_b_numseq, nrow = 1, ncol = 3, rel_widths = c(.05, 1, .6)
   )
+  if (num_sequences[i] == 30) {
+    filename_prefix <- "figure_2"
+  } else {
+    filename_prefix <- paste0("sim_1b_rel_eff_bounded_greater", num_sequences[i])
+  }
   for (filetype in c("png", "pdf")) {
-    ggsave(filename = here::here("R_output", paste0("sim_1b_rel_eff_bounded_greater", num_sequences[i],".", filetype)),
+    ggsave(filename = here::here("R_output", paste0(filename_prefix, ".", filetype)),
            plot = full_plot_b_numseq,
            width =  11.5, height = 5, units = "in")
   }

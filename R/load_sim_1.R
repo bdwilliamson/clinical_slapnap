@@ -36,10 +36,11 @@ mc_vars <- all_output %>%
            "VRC07-523-LS + PGT121 + PGDM1400", "VRC01/PGDM1400/10E8v4"
          )))
 
+point_size <- 3
 continuous_rel_eff_plot <- mc_vars %>% 
   filter(outcome == "IC80") %>% 
   ggplot(aes(x = pred_perf, y = relative_efficiency, color = bnab)) +
-  geom_point() +
+  geom_point(size = point_size) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
   labs(y = "Relative Efficiency (ignoring vs using auxiliary sequences)", 
        x = "Prediction Performance", color = "bnAb") +
@@ -50,7 +51,7 @@ continuous_rel_eff_plot <- mc_vars %>%
 binary_rel_eff_plot <- mc_vars %>% 
   filter(outcome == "IC80 < 1") %>% 
   ggplot(aes(x = pred_perf, y = relative_efficiency, color = bnab)) +
-  geom_point() +
+  geom_point(size = point_size) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
   labs(y = "Relative Efficiency (ignoring vs using auxiliary sequences)", 
        x = "Prediction Performance", color = "bnAb") +
@@ -82,7 +83,7 @@ full_plot <- plot_grid(
 #   facet_grid(rows = vars(outcome), cols = vars(percentage), labeller = label_both,
 #              scales = "free")
 for (filetype in c("png", "pdf")) {
-  ggsave(filename = here::here("R_output", paste0("sim_1_rel_eff.", filetype)),
+  ggsave(filename = here::here("R_output", paste0("figure_1.", filetype)),
          plot = full_plot, 
          width = 9.5, height = 5, units = "in")
 }

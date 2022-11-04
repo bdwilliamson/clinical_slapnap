@@ -21,7 +21,7 @@ source(here("R", "00_utils.R"))
 # and the outcome type (binary or continuous)
 parser <- ArgumentParser()
 parser$add_argument("--bnab", default = "PGT121", help = "the bnAb of interest")
-parser$add_argument("--country-threshold", type = "double", default = "20", help = "min number of neutralization readouts for consideration")
+parser$add_argument("--country-threshold", type = "double", default = "30", help = "min number of neutralization readouts for consideration")
 parser$add_argument("--outcome", default = "ic80", help = "the outcome of interest")
 parser$add_argument("--output-dir", default = here::here("R_output", "simulation_1b"), help = "the output directory")
 args <- parser$parse_args()
@@ -63,6 +63,13 @@ countries_above_threshold <- unlist(lapply(all_countries, function(country) {
   sum(!is.na(this_dat$ic80)) > args$country_threshold
 }))
 countries_of_interest <- unlist(all_countries)[countries_above_threshold]
+
+# summarize clade information
+refined_dat %>% 
+  filter(country.iso %in% countries_of_interest) %>% 
+  group_by(country.iso) %>% 
+  summarize(across(starts_with("subtype.is."), sum), .groups = "drop") %>% 
+  print(n = Inf, width = Inf)
 
 # remove ic80 if outcome is sens; otherwise, remove sens
 if (args$outcome == "sens") {
