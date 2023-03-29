@@ -22,3 +22,8 @@ dat/*
 *.log
 *.pdf
 *.synctex.gz
+*.bbl
+*.blg
+*.out
+
+*.zip

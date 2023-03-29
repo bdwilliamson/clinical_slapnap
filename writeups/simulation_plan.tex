@@ -30,118 +30,220 @@
 \DeclareMathOperator*{\argmin}{argmin}
 \DeclareMathOperator*{\logit}{logit}
 
-\title{Supplementary Material for \\
-``Super LeArner Prediction of NAb Panels (SLAPNAP) \\ Repository for Combination Monoclonal \\
-Broadly Neutralizing Antibody HIV Prevention Research'', \\
-by B.D. Williamson, L.N. Carpp, S. Karuna, C.A. Magaret, D. Benkeser, and P.B. Gilbert (and others)}
-\date{\today}
+\author{Brian D. Williamson$^{1,2}$ \\
+${}^1$Biostatistics Division, Kaiser Permanente Washington Health Research Institute \\
+${}^2$Vaccine and Infectious Disease Division, Fred Hutchinson Cancer Center \\
+Seattle, WA, USA
+}
+\title{Numerical experiments for ``Super Learner Prediction of NAb Panels (SLAPNAP) repository for combination monoclonal broadly neutralizing antibody HIV prevention research'', by Williamson et al.}
+\date{}
 
 \begin{document}
 \maketitle
 
 \section{Introduction}
 
-This document describes the planned simulations for the clinical SLAPNAP manuscript. The simulations address the following goals:
+This document describes the planned simulations for the manuscript ``Super Learner Prediction of NAb Panels (SLAPNAP) repository for combination monoclonal broadly neutralizing antibody HIV prevention research'', by Williamson et al. The simulations address the following goals:
 \begin{enumerate}
     \item determine if using external data (i.e., Env sequences) results in variance reduction for estimating the mean $\log_{10}$ IC$_{80}$ value and/or the probability that IC$_{80} < 1$; and
-    \item determine if using SLAPNAP can improve sieve analysis.
+    \item determine if using SLAPNAP \citep{williamson2021} can improve sieve analysis.
 \end{enumerate}
 In the next section, I describe my proposed approach to answering these two questions using simulations.
 
 \section{Simulation plan}
 \subsection{Using auxiliary response variables reduces estimation variance}
 \subsubsection{Continuous outcome}
-The simplest case for examining variance reductions is in the case of a continuous outcome (quantitative IC$_{80}$). The results from SLAPNAP runs predicting IC$_{80}$ for each bnAb in Table 1 of the SLAPNAP clinical manuscript are presented in the second column of Table~\ref{tab:perf}.
+The simplest case for examining variance reductions is in the case of a continuous outcome (quantitative IC$_{80}$). The results from SLAPNAP runs predicting (estimated) IC$_{80}$ for each bnAb or bnAb regimen in Table 1 of ``Super Learner Prediction of NAb Panels (SLAPNAP) repository for combination monoclonal broadly neutralizing antibody HIV prevention research'' are presented in the second column of Table~\ref{tab:perf-continuous}. We define estimated IC$_{80}$ for $J$ bnAbs according to estimated $\text{IC}_{80} = \left(\sum_{j=1}^J \text{IC}_{80,j}^{-1}\right)^{-1}$.
 
-For this simulation, for each bnAb in Table~\ref{tab:perf}, we denote by $W$ the $\log_{10}$ PAR score obtained from SLAPNAP (note that the untransformed PAR score is an estimator of $IC_{80}$ in this case) and by $Y$ the $\log_{10}$ IC$_{80}$ readout. We suppose that $(W,Y) \sim N(\mu, \Sigma)$, where $\mu = (\mu_1, \mu_2)$ is a mean vector and $\Sigma = \begin{bmatrix} \Sigma_{11} & \Sigma_{12} \\ \Sigma_{21} & \Sigma_{22} \end{bmatrix}$ is a covariance matrix. For simplicity, we set $\mu_1 = \mu_2 = \mu^*$, with $\mu^*$ the mean $\log_{10}$ IC$_{80}$ value in the CATNAP data for the specified bnAb (or bnAb regimen), and set $\Sigma_{11} = \Sigma_{22} = \Sigma^*$, with $\Sigma^*$ the variance of $\log_{10}$ IC$_{80}$ in the CATNAP data for the specified bnAb (or bnAb regimen). Under this model, we can write
+For this simulation, for each bnAb in Table~\ref{tab:perf-continuous}, we denote by $W$ the $\log_{10}$ proteomic antibody resistance (PAR) score obtained from SLAPNAP and by $Y$ the $\log_{10}$ IC$_{80}$ readout. The untransformed PAR score is an estimator of $IC_{80}$ in this case. We suppose that $(W,Y) \sim N(\mu, \Sigma)$, where $\mu = (\mu_1, \mu_2)$ is a mean vector and $\Sigma = \begin{bmatrix} \Sigma_{11} & \Sigma_{12} \\ \Sigma_{21} & \Sigma_{22} \end{bmatrix}$ is a covariance matrix. For simplicity, we set $\mu_1 = \mu_2 = \mu^*$, with $\mu^*$ the mean $\log_{10}$ IC$_{80}$ value in the CATNAP data \citep{yoon2015} for the specified bnAb (or bnAb regimen), and set $\Sigma_{11} = \Sigma_{22} = \Sigma^*$, with $\Sigma^*$ the variance of $\log_{10}$ IC$_{80}$ in the CATNAP data for the specified bnAb (or bnAb regimen). Under this model, we can write
 \begin{align*}
     R^2 =& \ 1 - \frac{var(W)}{var(Y)} \\
     =& \ 1 - \frac{\Sigma_{12}^2\Sigma_{22}^{-1}}{\Sigma_{11}}.
 \end{align*}
-We can then generate data according to $\Sigma_{12}^2 = (1 - R^2)\Sigma_{22}\Sigma_{11}$, using the point estimates of CV-$R^2$ provided in Table~\ref{tab:perf} (and under the simplifying assumption made above, $\Sigma_{11} = \Sigma_{22} = \Sigma^*$). We could also consider using a smaller number of values: for example, the median of the CV-$R^2$ values, the minimum value, and the maximum value.
+We can then generate data according to $\Sigma_{12}^2 = (1 - R^2)\Sigma_{22}\Sigma_{11}$, using the point estimates of CV-$R^2$ provided in Table~\ref{tab:perf-continuous} (and under the simplifying assumption made above, $\Sigma_{11} = \Sigma_{22} = \Sigma^*$).
+% We could also consider using a smaller number of values: for example, the median of the CV-$R^2$ values, the minimum value, and the maximum value.
 
-For each bnAb under consideration (either all in Table 1 or three ``bnAbs'' corresponding to the three CV-$R^2$ values highlighted above), we generate 1000 random datasets according to the following specification:
+% For each bnAb under consideration (either all in Table 1 or three ``bnAbs'' corresponding to the three CV-$R^2$ values highlighted above), we generate 1000 random datasets according to the following specification:
+For each bnAb under consideration, we generate 1000 random datasets according to the following specification:
 \begin{enumerate}
     \item We generate $n = 1000$ iid copies $(W_i, Y_i) \sim N(\mu^*, \Sigma^*)$, where again $Y$ denotes the $\log_{10}$ IC$_{80}$ values and $W$ denotes the corresponding $\log_{10}$ PAR scores. We truncate the upper limit of $Y$ at 1 (equivalent to an IC$_{80}$ of 10). We have found that IC$_{80} > 10$ mcg/ml indicates that a virus is resistant to the bnAb (regimen). Thus, this cutoff provides the key information for discriminating viruses above a cutoff of 10, and our interest is in discriminating viruses below this cutoff.
     \item We then generate $\epsilon \times 100$\% additional $\log_{10}$ PAR scores from this same distribution and suppress the IC$_{80}$ measurement, where $\epsilon \in \{0.5, 1, 2\}$.
 \end{enumerate}
-We use the variable $R$ to indicate whether $Y$ was observed or not; $R_i = 1$ implies that $Y_i$ was observed. The final dataset is then $(W, R, RY)$. Note that in this example, $\lambda \equiv \lambda(w) = P(R = 1 \mid W = w) = P(R = 1)$, since observing $Y$ is independent of the PAR score. We will generate 3000 total replications, 1000 for each value of $\epsilon$.
+We use the variable $R$ to indicate whether $Y$ was observed or not; $R_i = 1$ implies that $Y_i$ was observed. The final dataset is then $(W, R, RY)$. Note that in this example, $\lambda \equiv \lambda(w) = P(R = 1 \mid W = w) = P(R = 1)$, since observing $Y$ is independent of the PAR score. We will generate 3000 datasets $(W, R, RY)$ according to this specification. We will save 1000 datasets for $\epsilon = 2$, and then randomly delete observations to create the datasets for analysis of $\epsilon \in \{0.5, 1\}$.
 
-For each random dataset, our goal is to estimate the mean value of $Y$, $\theta \equiv E(Y)$; we will compare estimating $\theta$ among those pseudoviruses with $R_i = 1$ (using $n$ observations) to estimating $\theta$ using all pseudoviruses with a $\log_{10}$ PAR score (using $(1+\epsilon)n$ observations). We estimate the mean using the method of Rotnitzky and Robins (1995), and use code developed by Gilbert, Yu, and Rotnitzky (2013). In particular, the semiparametric efficient estimator of $\theta$ based on a sample of size $n$ (denoted by $\theta_n$) solves the estimating equation $\sum_{i=1}^n U_i(\theta, \lambda_i) = 0$, where
+For each random dataset, our goal is to estimate the mean value of $Y$, $\theta \equiv E(Y)$; we will compare estimating $\theta$ among those pseudoviruses with $R_i = 1$ (using $n$ observations) to estimating $\theta$ using all pseudoviruses with a $\log_{10}$ PAR score (using $(1+\epsilon)n$ observations). We estimate the mean using the method of \citet{rotnitzky1995}, and use code developed by \citet{gilbert2014}. In particular, the semiparametric efficient estimator of $\theta$ based on a sample of size $n$ (denoted by $\theta_n$) solves the estimating equation $\sum_{i=1}^n U_i(\theta, \lambda_i) = 0$, where
 \begin{align*}
     U_i(\theta, \lambda_i) =& \ \frac{R_i}{\lambda_i}(Y_i - \theta) - \frac{(R_i - \lambda_i)}{\lambda_i}\{E(Y \mid W_i) - \theta\}.
 \end{align*}
-We estimate $E(Y \mid W_i)$ using ordinary least squares -- denoting our estimator as $g_n: w \mapsto g_n(w)$ -- and then can use the estimating equation above to obtain an estimator of $\theta$. In our case, a consistent estimator of $\lambda$ is $\lambda_{n,i} = n / \{(1 + \epsilon)n\}$ for all $i$. In this special case, a closed form solution for $\theta$ exists:
+We estimate $E(Y \mid W_i)$ using ordinary least squares, denoting our estimator as $g_n: w \mapsto g_n(w)$, and then use the estimating equation above to obtain an estimator of $\theta$. In our case, a consistent estimator of $\lambda$ is $\lambda_{n,i} = n / \{(1 + \epsilon)n\}$ for all $i$. In this special case, a closed form solution for $\theta_n$ exists:
 \begin{align*}
-    \theta_n = \frac{1}{n\lambda_n}\sum_{i=1}^nR_i(Y_i - g_n(W_i)) + \frac{1}{n}\sum_{i=1}^n g_n(W_i)
+    \theta_n = \frac{1}{n\lambda}\sum_{i=1}^nR_i(Y_i - g_n(W_i)) + \frac{1}{n}\sum_{i=1}^n g_n(W_i)
 \end{align*}
- We obtain two estimators, $\theta_{n,1}$ and $\theta_{n,2}$, corresponding to using only the data with observed outcome (i.e., $R_i = 1$) and using the additional data, respectively.
+ We obtain two estimators, $\theta_{n,1}$ and $\theta_{n,2}$, corresponding to using only the data with observed outcome (i.e., $R_i = 1$, which is simply the sample average of $Y$) and using the additional data, respectively.
 
 We then compute the Monte-Carlo variance of the estimated means $\theta_{n,1}$ and $\theta_{n,2}$ over the 1000 replications, and estimate the relative efficiency of using the additional pseudoviruses by taking the ratio of the Monte-Carlo variance ignoring the additional pseudoviruses (the Monte-Carlo variance of $\theta_{n,1}$) to the Monte-Carlo variance using the additional pseudoviruses (the Monte-Carlo variance of $\theta_{n,2}$).
 
 \begin{table}
     \centering
-    \caption{Prediction performance for each broadly neutralizing antibody (bnAb) or bnAb regimen from Table 1 of the SLAPNAP clinical manuscript. For each SLAPNAP run, performance is measured using cross-validated R-squared (CV-$R^2$) for continuous IC$_{80}$ and using cross-validated AUC (CV-AUC) for (estimated) sensitivity and multiple sensitivity (where applicable).}
-    \begin{tabular}{l|ccc}
-        & \multicolumn{3}{c}{Prediction performance} \\
-        bnAb (or bnAb regimen) & IC$_{80}$ & (Estimated) Sensitivity & Multiple Sensitivity \\
+    \caption{Prediction performance for each broadly neutralizing antibody (bnAb) or bnAb regimen from Table 1 of the SLAPNAP clinical manuscript. For each SLAPNAP run, performance is measured using cross-validated R-squared (CV-$R^2$) for continuous IC$_{80}$. For a bnAb regimen with $J$ bnAbs, estimated $\text{IC}_{80} = \left(\sum_{j=1}^J \text{IC}_{80,j}^{-1}\right)^{-1}$.}
+    \begin{tabular}{l|c}
+        & \multicolumn{1}{c}{Prediction performance} \\
+        bnAb (or bnAb regimen) & (Estimated) IC$_{80}$ \\
         \hline
-        VRC01 & 0.345 & 0.744 & -- \\
-        PGT121 & 0.571 & 0.85 & -- \\
-        VRC07-523-LS & 0.193 & 0.728 & --\\
-        VRC26.25 (CAP256) & 0.53 & 0.867 & --\\
-        VRC07-523-LS + 10-1074 & 0.319 & 0.783 & 0.784 \\
-        VRC07-523-LS + PGT121 & 0.316 & 0.768 & 0.781 \\
-        VRC07-523-LS + PGDM1400 & 0.255 & 0.638 & 0.669 \\
-        VRC07-523-LS + PGT121 + PGDM1400 & 0.181 & 0.73 & 0.708 \\
-        VRC01/PGDM1400/10e8v4 & 0.254 & 0.81 & --
+        VRC01 & 0.345  \\
+        PGT121 & 0.571 \\
+        VRC07-523-LS & 0.193 \\
+        VRC26.25 (CAP256) & 0.53 \\
+        VRC07-523-LS + 10-1074 & 0.319 \\
+        VRC07-523-LS + PGT121 & 0.316 \\
+        VRC07-523-LS + PGDM1400 & 0.255 \\
+        VRC07-523-LS + PGT121 + PGDM1400 & 0.181 \\
+        VRC01/PGDM1400/10e8v4 & 0.254
     \end{tabular}
-    \label{tab:perf}
+    \label{tab:perf-continuous}
 \end{table}
 
 \subsubsection{Binary outcome}
+
+\begin{table}
+    \centering
+    \caption{Prediction performance for each broadly neutralizing antibody (bnAb) or bnAb regimen from Table 1 of the SLAPNAP clinical manuscript. For each SLAPNAP run, performance is measured using cross-validated AUC (CV-AUC) for (estimated) sensitivity, defined as (estimated) IC$_{80} < 1$ $\mu$g/ml, where for $J$ bnAbs, estimated IC$_{80} = \left(\sum_{j=1}^J \text{IC}_{80,j}^{-1}\right)^{-1}$; and multiple sensitivity, defined as $\text{IC}_{80,j} < 1$ for at least 1 bnAb (where applicable).}
+    \begin{tabular}{l|cc}
+        & \multicolumn{2}{c}{Prediction performance} \\
+        bnAb (or bnAb regimen) & (Estimated) Sensitivity & Multiple Sensitivity \\
+        \hline
+        VRC01 & 0.744 & -- \\
+        PGT121 & 0.85 & -- \\
+        VRC07-523-LS & 0.728 & --\\
+        VRC26.25 (CAP256) & 0.867 & --\\
+        VRC07-523-LS + 10-1074 & 0.783 & 0.784 \\
+        VRC07-523-LS + PGT121 & 0.768 & 0.781 \\
+        VRC07-523-LS + PGDM1400 & 0.638 & 0.669 \\
+        VRC07-523-LS + PGT121 + PGDM1400 & 0.73 & 0.708 \\
+        VRC01/PGDM1400/10e8v4 & 0.81 & --
+    \end{tabular}
+    \label{tab:perf-binary}
+\end{table}
 
 We use a similar approach for binary outcomes to the approach outlined in the previous section. We now denote by $Y$ the indicator that IC$_{80} < 1$, and denote by $W$ the logit PAR score. In this setting, where we are predicting a binary outcome, the (untransformed) PAR score for a given pseudovirus is the predicted probability that the pseudovirus has IC$_{80} < 1$ based on the AA sequence, and thus lies in $[0,1]$; the logit PAR score then lies in $(-\infty, \infty)$. We suppose that $Y \sim Bern(p)$, where $p$ is the sample proportion for each bnAb in the CATNAP data, and that $W \mid Y = y \sim N(\mu_y, \sigma^2_y)$. Based on this specification, we can write (for two iid samples $(W_1, Y_1)$ and $(W_2, Y_2)$)
 \begin{align*}
     AUC =& P(W_1 < W_2 \mid Y_1 = 0, Y_2 = 1) \\
     =& \ P(W_2 - W_1 > 0 \mid Y_1 = 0, Y_2 = 1);
 \end{align*}
-setting $Z = W_2 - W_1$, we see that $Z$ has a normal distribution with mean $\mu_1 - \mu_0$ and variance $\sigma^2_0 + \sigma^2_1$. Thus,
+setting $Z = W_2 - W_1$, we see that conditional on $(Y_1, Y_2)$, $Z$ has a normal distribution with mean $\mu_1 - \mu_0$ and variance $\sigma^2_0 + \sigma^2_1$. Thus,
 \begin{align*}
     AUC =& \ P\left(\frac{Z - (\mu_1 - \mu_0)}{\sqrt{\sigma^2_0 + \sigma^2_1}} > \frac{- (\mu_1 - \mu_0)}{\sqrt{\sigma^2_0 + \sigma^2_1}}\right) \\
     \Rightarrow \frac{(\mu_1 - \mu_0)}{\sqrt{\sigma^2_1 + \sigma^2_0}} =& \ (-1)\Phi^{-1}(1 - AUC),
 \end{align*}
-where $\Phi$ denotes the standard normal cdf. Thus, setting $\sigma^2_1 = \sigma^2_0 = 0.005$ and $\mu_0 = -0.32$ (corresponding to a mean PAR score of 0.42 among those with $Y = 0$), we can generate $n$ iid copies of $W$ and $Y$ with $R = 1$, and generate $\epsilon \times 100$\% iid copies of $W$ with $R = 0$ (the additional logit PAR scores). Again, the full data are $(1 + \epsilon)n$ iid copies of $(W_i, R_i, R_iY_i)$.
+where $\Phi$ denotes the standard normal cdf. Thus, setting $\sigma^2_1 = \sigma^2_0 = 0.005$ and $\mu_0 = -0.32$ (corresponding to a mean PAR score of 0.42 among those with $Y = 0$), we can generate $n$ iid copies of $W$ and $Y$ with $R = 1$, and generate $\epsilon \times 100$\% iid copies of $W$ with $R = 0$ (the additional logit PAR scores). The point estimates of AUC are provided in Table~\ref{tab:perf-binary}. Again, the full data are $(1 + \epsilon)n$ iid copies of $(W_i, R_i, R_iY_i)$.
 
 For each random dataset, our goal is now to estimate $\theta = E(Y) = P(\text{IC}_{80} < 1)$; we will again compare estimating $\theta$ among those pseudoviruses with $R_i = 1$ (using $n$ observations) to estimating $\theta$ using all pseudoviruses with a logit PAR score (using $(1+\epsilon)n$ observations). We use an identical estimation procedure to that described in the previous section, with one exception: we use a logistic regression model to estimate $E(Y \mid W_i)$. We then compute the Monte-Carlo variance of the estimated means over the 1000 replications as before, and estimate the relative efficiency of using the additional pseudoviruses by taking the ratio of the Monte-Carlo variance ignoring the additional pseudoviruses to the Monte-Carlo variance using the additional pseudoviruses.
 
 \subsection{Sieve analysis}
 
-The goal of this simulation is to see if SLAPNAP improves sieve analysis; in particular, we want to see if using SLAPNAP results in improved power for detecting sieve effects. For simplicity, we will focus on VRC01 only for this simulation, and consider an AMP-like design with only the high-dose arm.
+The goal of this simulation is to see if SLAPNAP improves sieve analysis; in particular, we want to see if using SLAPNAP results in improved power for detecting sieve effects. For simplicity, we will use VRC01 to define residues that are sensitive or resistant for this simulation, and consider an Antibody Mediated Prevention Trials (AMP)-like design with only the high-dose arm. In this simulation, we assume that we are using data from a trial assessing the prevention efficacy of a combination bnAb regimen $R$ (involving a VRC01-type bnAb) that is expected to have higher prevention efficacy than that observed in AMP.
 
-We will use Cox modeling (Lunn and McNeil, 1995; implemented in the \texttt{R} package \texttt{sievePH}) to estimate differential prevention efficacy by `putative resistant' genotype versus `other genotype' for each of the 26 positions in gp120 identified as important for the AMP sieve analysis with enough variability in the AMP data, defined by at least 4 primary endpoint cases having a sequence with a minority residu at the given position (harmonized with the AMP sieve analysis). We denote the sites that pass the variability threshold by $\{H_j: j \in I\}$, where $\lvert I \rvert \leq 26$.
-
-Next, we define the alternative hypotheses for sieve effects at each site. We assume an overall prevention efficacy of 29\% (as identified in AMP, for the high-dose VRC01 group pooled across trials), i.e., set $PE(\text{overall}) = 0.29$. We also assume $PE(\text{putative resistant genotype at site } H_j) = 0$ for all $j$. Then for each site $H_1,\ldots,H_I$, we set
-\begin{align*}
-    PE(\text{overall}) = \gamma_j PE(\text{putative resistant genotype at site } H_j) + (1 - \gamma_j)PE(\text{other genotype at site } H_j),
-\end{align*}
-where $\gamma_j$ is the fraction of placebo-arm AMP viruses that have the putative resistant genotype at site $j$. This allows us to determine the alternative hypothesis for each site. For all other gp120 sites (suppose there are $J$ total sites), we assume the null hypothesis $PE(\text{putative resistant genotype at site } H_j) = PE(\text{other genotype at site } H_j)$. We compute each $\gamma$ using the AMP data.
-
-For each of 1000 Monte-Carlo replications, we generate data according to the following specification: $n$ independent observations of
+Suppose that we randomly assign study participants in a 1:1 allocation to placebo or the combination regimen $R$, letting $A \in \{0,1\}$ denote the treatment assignment (0 = placebo, 1 = assignment to $R$). Suppose further that each participant in the trial has an underlying time to HIV-1 infection diagnosis (denoted by $T$), and a corresponding genotype for the infecting HIV-1 virus. We let $S = (S_1, \ldots, S_J)$ denote a binary indicator vector, where $S_j$ is the indicator that the Env sequence has the putative sensitive residue present at amino acid (AA) position $j$ in the Env protein, and $J$ is the number of HXB2 positions in the Env protein that exhibit sufficient residue variability. We define sufficient residue variability at a given position by at least 4 primary endpoint cases from AMP having a sequence with a minority residue at that position, pooled over both AMP trials (harmonized with the AMP sieve analysis). Based on AMP, there are 414 AA sites that exhibit sufficient variability (i.e., $J = 414$). More specifically, we assume that
 \begin{align*}
   A \sim & \ Bern(0.5) \\
-  R_j \sim & \ Bern(\gamma_j) \text{ for } j = 1, \ldots, J \\
-  T \mid A = a, R = r \sim & \ Exp(\lambda\text{exp}(\beta \begin{bmatrix}a & r \end{bmatrix})) \\
-  C =& \ c \\
-  Y =& \ I(T \leq C),
+  S_j \sim & \ Bern(\gamma_{0,j}) \text{ for } j \in \{1, \ldots, J\}.
 \end{align*}
-where $A$ denotes assignment to VRC01 ($A = 1$) or placebo, $R_j$ denotes the binary `mark' that site $j$ has the putative resistant genotype, $R$ denotes the full vector marks at each of the $J$ AA positions, $T$ denotes the HIV infection time, $C$ denotes the censoring time (and $c$ denotes study end), and $Y$ denotes the indicator that we have observed an HIV infection event before the end of the study.
-We then apply a standard Lunn and McNeil test for differential PE at each gp120 site $j = 1, \ldots, J$ with two-sided level 0.05; we define a detection as the resulting p-value from this test being less than the family-wise error rate using a multiplicity-adjusted threshold of 0.05, implemented using a Holm-Bonferroni adjustment. We compute the power as the Monte-Carlo average number of true detections.
+We assume here that $S_1, \ldots, S_J$ are mutually independent; while this is not true in general due to covariability of AA positions, this fact does not impact the simulation design, as we make clear below. In Table~\ref{tab:sens}, we list positions in the Env gp120 region identified as important for the AMP sieve analysis with enough variability in the AMP data, along with the corresponding sensitive genotype (residue). We define $\gamma_{0,j}$ to be the proportion of AMP placebo-arm participants with the putative sensitive residue at AA position $j$. Table~\ref{tab:sens} contains the values of $\gamma_{0,j}$ for the pre-identified positions. For positions in gp120 outside of this list of pre-identified positions, we selected a `putative sensitive residue' by identifying the residue observed to be most frequent among VRC01-sensitive viruses vs. VRC01-resistant viruses in CATNAP, and then defined the corresponding $\gamma_{0,j}$ as the proportion of this residue among AMP placebo-arm participants.
 
-We also perform a separate 1000 Monte-Carlo replications, generating data according to the same specification as above, and apply a standard Lunn and McNeil test for differential PE at each of the important high-variability sites in $I$ with two-sided level 0.05; we define a detection as the resulting p-value from this test being less than the family-wise error rate multiplicity-adjusted threshold of 0.05, again using a Holm-Bonferroni adjustment. These testing procedures have the opportunity to provide greater power because they adjust for a smaller number of hypothesis tests, if indeed the SLAPNAP PAR score procedure for enriching sites most likely to impact in vivo vaccine efficacy has some predictive power. We compute the power as the Monte-Carlo average number of true detections across the 1000 replications.
+\begin{table}
+  \caption{HXB2-reference position in HIV-1 Env gp120 identified as being important for predicting sensitivity to VRC01, along with the putative sensitive residue at the given position and the proportion of AMP trial placebo arm participants with the putative sensitive residue at the position.}
+  \label{tab:sens}
+  \begin{tabular}{lll}
+    HXB2 position & Putative sensitive residue & Prop. AMP placebo participants with sensitive residue ($\gamma_{0,j}$)\\
+    \hline
+    60 & A & 0.852 \\
+    142 & T & 0.173 \\
+    144 & N & 0.098 \\
+    147 & T & 0.024 \\
+    170 & Q & 0.198 \\
+    230 & not D & 0.556 \\
+    279 & N & 0.383 \\
+    280 & N & 0.975 \\
+    317 & F & 0.840 \\
+    365 & S & 0.815 \\
+    429 & E & 0.506 \\
+    456 & R & 0.963 \\
+    458 & G & 1 \\
+    459 & G & 0.951 \\
+    471 & G & 0.580 \\
+  \end{tabular}
+\end{table}
 
-Comparing the power of these two approaches (analyze all of gp120, analyze only the important high-variability sites) will provide a useful description of how much SLAPNAP aids in sieve analysis.
+We assume that $R$ has an overall prevention efficacy of 0.7. We further assume that for the positions given in Table~\ref{tab:sens}, there may be greater prevention efficacy of $R$ against viruses with a putative sensitive residue at a given position than against viruses with another residue at the given position. This latter assumption can be formalized using the language of sieve analysis. We define a sieve effect at AA position $j$ as differential prevention efficacy at that position; more specifically, we conduct a hypothesis test of
+\begin{align*}
+  H_0: PE(S_j = 1) = PE(S_j = 0) \text{ versus } H_1: PE(S_j = 1) \neq PE(S_j = 0).
+\end{align*}
+For each position $j$, we define the overall PE as a function of the PE of a sensitive and other genotype at position $j$, i.e.,
+\begin{align}
+  \log \{1 - PE(\text{overall})\} =& \ \gamma_{0,j} \log \{1 - PE(S_j = 1)\} + (1 - \gamma_{0,j}) \log \{1 - PE(S_j = 0)\}. \label{eq:pe}
+\end{align}
+To simplify the simulation, we assume absence of sieve effects at all AA positions except for AA position 230. This position was observed to have a sieve effect with respect to VRC01 in one of the AMP trials (HVTN 704 / HPTN 085), where the presence of residue D at position 230 was found to be resistant (estimated 64\% PE based on \emph{not} residue D at 230 vs. estimated -24\% PE based on residue D at 230). We initially assume that $PE(S_{230} = 0) = 0$. Following Equation~\eqref{eq:pe}, under this assumption $PE(S_{230} = 1) \approx 0.89$.
 
+Next, we let $T_0$ and $T_1$ denote the latent cause-specific time to HIV-1 infection diagnosis with a virus with $S_{230} = 0$ and $S_{230} = 1$, respectively, and let $T$ denote the latent HIV-1 infection diagnosis time with $T = \min \{T_0, T_1\}$. More specifically, we model the latent cause-specific HIV-1 infection diagnosis times as
+\begin{align*}
+  T_0 \mid A = a \sim & \ Exp(\lambda \exp[\log (1 - \gamma_{0, 230}) + a \log\{1 - PE(S_{230} = 0)\}]) \\
+  T_1 \mid A = a \sim & \ Exp(\lambda\exp[\log \gamma_{0,230} + a \log\{1 - PE(S_{230} = 1)\}]) \\
+  T =& \ \min\{T_0, T_1\}.
+\end{align*}
+Under the above model for the latent HIV-1 infection diagnosis times we can write the following hazards (with $h_j(a)$ denoting the cause-specific hazard of HIV-1 infection with genotype $j$ for $S_{230} = j$ in arm $A = a$):
+\begin{align*}
+  h_0(A = 0) =& \ \lambda (1 - \gamma_{0, 230}) \\
+  h_1(A = 0) =& \ \lambda \gamma_{0,230} \\
+  h_0(A = 1) =& \ \lambda (1 - \gamma_{0, 230}) \{1 - PE(S_{230} = 0)\} \\
+  h_1(A = 1) =& \ \lambda \gamma_{0,230} \{1 - PE(S_{230} = 1)\};
+\end{align*}
+under the assumption that $PE(S_{230} = 0)$, $h_0(A = 1) = \lambda (1 - \gamma_{0, 230}) = h_0(A = 0)$, which aligns precisely with our assumptions above that prevention efficacy based on the resistant genotype at 230 is zero. We assume three different baseline hazards among those with $S_{230} = 0$: $\lambda \in \{.03, .018, .006\}$, corresponding to three different incidence rates. In each of the three settings, the baseline hazard has been calibrated so that we expect to see approximately 88 HIV-1 infections combined over the two arms over the 24-month followup period, which is the number of events needed to have 90\% power to detect 50\% overall prevention efficacy versus a null hypothesis of 0\% overall prevention efficacy in a trial designed with a 1:1 allocation of study participants to the placebo or bnAb arms.  \citet{gilbert2019} considered this design as a potential sequel phase 2b design to the AMP trials. These baseline hazards imply sample sizes $n \in \{2071, 4141, 12422\}$ (see Table 2 in \citet{gilbert2019}).
+
+Then we define the following censoring and observation processes:
+\begin{align*}
+  C \sim & \ Unif(0, c) \\
+  \Delta =& \ I(T \leq C \ \& \ T \leq \text{24 months}) \\
+  Y =& \ \Delta T + (1 - \Delta) \min\{C, \text{24 months}\} \\
+  V =& \ \Delta S_{230},
+\end{align*}
+where $C$ denotes the censoring time, which is independent of $T$; $\Delta$ denotes the indicator that we have observed an HIV infection diagnosis event before the end of the study (at 24 months for primary outcome adjudication) or censoring; $Y$ denotes the observation time; and $V$ denotes the observed ``mark'', i.e., the presence of a sensitive residue at site 230. Note that in participants for whom we observe $\Delta = 0$, i.e., the participant does not acquire HIV-1 infection, $Y$ is the minimum of the censoring time and the end of the study and $V$ is not defined. We assume a yearly censoring rate of 10\%, implying that $c = (365 \times 2) / 0.1$.
+
+We will use Cox modeling \citep[][implemented in the \texttt{R} package \texttt{sievePH}]{lunn1995} to estimate differential prevention efficacy. For each of 1000 Monte-Carlo replications, we generate data according to the following specification. For a given baseline hazard $\lambda$ and corresponding sample size $n$, we first generate $n$ independent observations of
+\begin{align*}
+  A \sim & \ Bern(0.5) \\
+  T_0 \sim & \ Exp(\lambda \exp[\log (1 - \gamma_{0, 230}) + a \log\{1 - PE(S_{230} = 0)\}]) \\
+  T_1 \sim & \ Exp(\lambda\exp[\log \gamma_{0,230} + a \log\{1 - PE(S_{230} = 1)\}]) \\
+  T =& \ \min\{T_0, T_1\} \\
+  S_{230} =& \ I\{T = T_1\} \\
+  S_j \sim & \ Bern(\gamma_{0,j}) \text{ for } j \in \{1, \ldots, J\} \setminus \{230\} \text{ mutually independent} \\
+  C \sim & \ Unif(0, c).
+\end{align*}
+We then set $\Delta = I(T \leq C \ \& \ T \leq \text{ 24 months})$, $Y = \Delta T + (1 - \Delta) \min\{C, 24 \text{ months}\}$, and $V = \Delta S_{230}$, where again if $\Delta = 0$ then $V$ is missing.
+
+For a given dataset, we consider two different sieve analysis strategies. The first is to apply a standard Lunn and McNeil test for differential PE at each Env gp120 site with sufficient variability $j = 1, \ldots, J$ with two-sided level 0.05; we define a detection as the resulting p-value from this test being less than the family-wise error rate using a multiplicity-adjusted threshold of 0.05, implemented using a Holm-Bonferroni adjustment. We call this a ``site-scanning'' sieve analysis. The second is a ``priority'' sieve analysis, where we apply a standard Lunn and McNeil test for differential PE at each of the important high-variability sites listed in Table~\ref{tab:sens}, and define a detection as the resulting p-value from this test being less than the family-wise error rate multiplicity-adjusted threshold of 0.05, again using a Holm-Bonferroni adjustment.
+
+The priority sieve analysis has the opportunity to provide greater power because we adjust for a smaller number of hypothesis tests, if indeed the SLAPNAP procedure for identifying sites most likely to impact in vivo vaccine efficacy has some predictive power. We compute the power as the Monte-Carlo average number of true detections across the 1000 replications. We repeat the process of generating 1000 Monte-Carlo replications for each assumed baseline hazard and corresponding sample size. Comparing the power of the site-scanning approach to the priority approach will provide a useful description of how much SLAPNAP aids in sieve analysis.
+
+To better understand power as a function of the effect size, we also generate data under several different hypothesized values of $PE(S_{230} = 0)$. The corresponding parameter values used in the simulations are provided in Table~\ref{tab:effect_size}. The case $PE(S_{230} = 0) = PE(S_{230} = 1) = 0.7$ corresponds to the sieve null hypothesis, in which case the power of the sieve analyses should be controlled at the type I error rate (0.05). The case $PE(S_{230} = 0) = 0$ should result in the highest power for detecting sieve effects.
+
+\begin{table}
+  \centering
+  \caption{Values of $PE(S_{230} = 1)$ based on differing values of $PE(S_{230} = 0)$. These values are guaranteed to satisfy the constraint on overall PE provided in Equation~\eqref{eq:pe}.}
+  \label{tab:effect_size}
+  \begin{tabular}{lll}
+    $PE(S_{230} = 0)$ & $PE(S_{230} = 1)$ \\
+    \hline
+    0 & 0.89 \\
+    0.233 & 0.86 \\
+    0.466 & 0.81\\
+    0.7 & 0.7
+  \end{tabular}
+\end{table}
+
+\bibliographystyle{chicago}
+\bibliography{pubs}
+
+<<<<<<< HEAD
 \section{Data analysis}
 
 \subsubsection{Country-specific estimation of the mean outcome value}
@@ -161,4 +263,6 @@ To create Figure 4 in the main manuscript, we summarized the results across coun
 
 
 % \textcolor{blue}{Brian to Michal: your input would be super helpful on (a) whether the data-generating mechanism above makes sense; and (b) how to define $\beta$ and $\lambda$ such that we get the appropriate null/alternative hypotheses.}
+=======
+>>>>>>> dc4a5228cd94aba2d496bd015819bbcbd8fe506e
 \end{document}

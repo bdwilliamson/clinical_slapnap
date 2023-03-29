@@ -21,7 +21,7 @@ io_prefix="/fh/scratch/delete90/gilbert_p/bwillia2/clinical_slapnap/output"
 # Run the R script
 echo -e \
     '#!/bin/bash\n Rscript simulation_1b.R ' \
-    '--bnab $1 --outcome $2 --country-threshold 20 ' \
+    '--bnab $1 --outcome $2 --country-threshold 30 ' \
     '--output-dir $3' > run_sim1b.sh
 chmod u+x run_sim1b.sh
 
@@ -31,6 +31,7 @@ for bnab in ${bnabs[@]}; do
         full_io_prefix="${io_prefix}_${bnab}_${outcome}"
         mkdir -p $full_io_prefix
         io_file="${full_io_prefix}/slurm-%A.out"
+        # modify the following line to run on your cluster environment
         sbatch -A gilbert_p --mem=100G --time=1-0 -e $io_file \
             -o $io_file ./run_sim1b.sh $bnab $outcome $save_dir
     done

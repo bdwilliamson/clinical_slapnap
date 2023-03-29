@@ -1,4 +1,4 @@
-# Simulation 1b:
+# Simulation 1a:
 # Data analysis comparing
 # (a) using sequences with data only in CATNAP to
 # (b) using sequences with data in LANL, with SLAPNAP predictions
@@ -12,19 +12,17 @@ library("SuperLearner")
 library("glmnet")
 library("ranger")
 library("xgboost")
-library("boot")
 
 source(here("R", "00_sim_utils.R"))
 source(here("R", "00_utils.R"))
-source(here("R", "03_super_learner_libraries.R"))
 
 # get command-line args --------------------------------------------------------
 # these specify the bnAb of interest, min number of readouts to specify the country(ies) of interest,
 # and the outcome type (binary or continuous)
 parser <- ArgumentParser()
-parser$add_argument("--bnab", default = "VRC07-523-LS_PGDM1400", help = "the bnAb of interest")
-parser$add_argument("--country-threshold", type = "double", default = "20", help = "min number of neutralization readouts for consideration")
-parser$add_argument("--outcome", default = "sens", help = "the outcome of interest")
+parser$add_argument("--bnab", default = "PGT121", help = "the bnAb of interest")
+parser$add_argument("--country-threshold", type = "double", default = "30", help = "min number of neutralization readouts for consideration")
+parser$add_argument("--outcome", default = "ic80", help = "the outcome of interest")
 parser$add_argument("--output-dir", default = here::here("R_output", "simulation_1b"), help = "the output directory")
 args <- parser$parse_args()
 
@@ -43,7 +41,8 @@ if (!any(grepl("_", args$bnab))) {
     select(-seq.id.lanl, -seq.id.catnap, -num.seqs.in.country.catnap, -num.seqs.in.country.all,
            -seq.in.catnap, -seq.in.lanl.2019, -contains("ic50"), -contains("censored")) %>%
     rename(ic80 = contains("ic80")) %>%
-    mutate(sens = as.numeric(ic80 < 1), .after = "ic80")
+    mutate(sens = as.numeric(ic80 < 1), .after = "ic80") %>%
+    mutate(ic80 = log10(ic80))
   n_ab <- 1
 } else {
   # handle bnAb regimen
@@ -52,7 +51,8 @@ if (!any(grepl("_", args$bnab))) {
            -seq.in.catnap, -seq.in.lanl.2019, -contains("ic50"), -contains("ic80"),
            -contains("iip"), -contains("dichotomous")) %>%
     mutate(ic80 = dat %>% pull(pc.ic80),
-           sens = as.numeric(ic80 < 1), .after = "country.iso")
+           sens = as.numeric(ic80 < 1), .after = "country.iso") %>%
+    mutate(ic80 = log10(ic80))
   n_ab <- 2
 }
 
@@ -63,6 +63,13 @@ countries_above_threshold <- unlist(lapply(all_countries, function(country) {
   sum(!is.na(this_dat$ic80)) > args$country_threshold
 }))
 countries_of_interest <- unlist(all_countries)[countries_above_threshold]
+
+# summarize clade information
+refined_dat %>% 
+  filter(country.iso %in% countries_of_interest) %>% 
+  group_by(country.iso) %>% 
+  summarize(across(starts_with("subtype.is."), sum), .groups = "drop") %>% 
+  print(n = Inf, width = Inf)
 
 # remove ic80 if outcome is sens; otherwise, remove sens
 if (args$outcome == "sens") {
@@ -82,45 +89,34 @@ if (n_ab == 1) {
     outcome_txt <- "ic80"
   }
 }
+b <- 5000
 
 # get predictions from SLAPNAP--------------------------------------------------
 # read in the correct model
 slapnap_folder <- here::here("docker_output",
-                             paste0(switch(as.numeric(outcome_type == "continuous") + 1,
-                                           NULL, "continuous/"),
-                                    tolower(args$bnab)))
+                             paste0(switch(as.numeric(outcome_type == "continuous") + 1, "", "continuous/"), tolower(args$bnab), "/"))
 all_learner_files <- list.files(slapnap_folder,
-                           pattern = paste0("learner_", outcome_txt, "_", args$bnab))
+                                pattern = paste0("learner_", outcome_txt, "_", args$bnab))
 learner_files <- all_learner_files[!grepl("cv", all_learner_files)]
-dates <- as.Date(gsub(paste0("learner_", outcome_txt, "_", args$bnab, "_"), "",
-                      gsub(".rds", "", learner_files)),
+dates <- as.Date(gsub(paste0("learner_", outcome_txt, "_", args$bnab, "_"), "", gsub(".rds", "", learner_files)),
                     format = "%d%b%Y")
 current_date <- Sys.Date()
 closest_date <- which.min(current_date - dates)
 slapnap_mod <- readRDS(paste0(slapnap_folder, "/", learner_files[closest_date]))
 
-# create the correct learner/screen combinations
-if (any(grepl("var_thresh", slapnap_mod$libraryNames))) {
-    thresh_init <- gsub(".*?var_thresh_(.*?)", "", slapnap_mod$libraryNames)
-    unique_thresh <- unique(as.numeric(thresh_init[!grepl("SL", thresh_init)]))
-    for (i in seq_len(length(unique_thresh))) {
-        make_screen_wrapper(var_thresh = unique_thresh[i])
-    }
-}
-# if there were any xgboosts fit, need to "complete" them
-is_xgboost <- grepl("xgboost", slapnap_mod$libraryNames)
-if (any(is_xgboost)) {
-    all_xgboosts <- slapnap_mod$libraryNames[is_xgboost]
-    for (i in seq_len(length(all_xgboosts))) {
-        slapnap_mod$fitLibrary[is_xgboost][[i]]$object <- xgb.Booster.complete(slapnap_mod$fitLibrary[is_xgboost][[i]]$object)
-    }
-}
+# estimate E(Y | W) based on all of slapnap preds
+all_preds <- slapnap_mod$SL.predict
+dat_for_g <- tibble::tibble(w = all_preds, y = slapnap_mod$Y) %>%
+  mutate(r = as.numeric(!is.na(y)))
+g_mod <- glm(y ~ w, data = dat_for_g,
+             family = switch(as.numeric(outcome_type == "binary") + 1, gaussian(),
+                             binomial()))
 
 # run the analyses -------------------------------------------------------------
-set.seed(123125)
+set.seed(4747)
+seeds <- round(runif(length(countries_of_interest), 1e4, 1e5))
 output <- NULL
-for (i in seq_len(length(countries_of_interest))) {
-  country <- countries_of_interest[i]
+for (country in countries_of_interest) {
   country_data <- refined_dat %>%
     filter(country.iso == country) %>%
     select(-country.iso)
@@ -132,29 +128,32 @@ for (i in seq_len(length(countries_of_interest))) {
 
   # get predictions from SLAPNAP
   preds <- predict(slapnap_mod, newdata = X, onlySL = TRUE)$pred
-  if (args$outcome == "ic80") {
-    w <- as.numeric(preds)
-  } else {
-    w <- as.numeric(expit(preds))
-  }
+  # if (args$outcome == "ic80") {
+  #   w <- preds
+  # } else {
+  #   w <- expit(preds)
+  # }
+  w <- preds
   # set up the dataset
   analysis_dataset <- tibble::tibble(w = w, r = as.numeric(!is.na(y)),
                                      y = y)
+  set.seed(seeds[country == countries_of_interest])
   # estimate lambda
   lambda_n <- n_catnap / n_overall
   # estimate g
-  g_n <- est_g(dat = analysis_dataset, type = outcome_type)
+  g_n <- predict(g_mod, newdata = analysis_dataset, type = "response")
+  # g_n <- est_g(dat = analysis_dataset, type = outcome_type)
   # estimate parameter of interest
   theta <- est_theta(dat = analysis_dataset, preds = g_n, lambda = lambda_n, augmented = FALSE)
+  theta_aug <- est_theta(dat = analysis_dataset, preds = g_n, lambda = lambda_n, augmented = TRUE)
   boot_theta <- boot::boot(data = analysis_dataset, statistic = sim1b_boot_stat,
-                           R = 1000, sim = "ordinary", stype = "i",
-                           augmented = FALSE, lambda = lambda_n,
+                           R = b, sim = "ordinary", stype = "i",
+                           augmented = FALSE, g_n = g_mod,
                            outcome_type = outcome_type)
   boot_ci_theta <- boot::boot.ci(boot_theta, conf = 0.95, type = "perc")
-  theta_aug <- est_theta(dat = analysis_dataset, preds = g_n, lambda = lambda_n, augmented = TRUE)
   boot_theta_aug <- boot::boot(data = analysis_dataset, statistic = sim1b_boot_stat,
-                               R = 1000, sim = "ordinary", stype = "i",
-                               augmented = TRUE, lambda = lambda_n,
+                               R = b, sim = "ordinary", stype = "i",
+                               augmented = TRUE, g_n = g_mod,
                                outcome_type = outcome_type)
   boot_ci_theta_aug <- boot::boot.ci(boot_theta_aug, conf = 0.95, type = "perc")
   if (is.null(boot_ci_theta)) {
@@ -172,10 +171,9 @@ for (i in seq_len(length(countries_of_interest))) {
                    augmented = c(FALSE, TRUE),
                    est = c(theta, theta_aug),
                    ci_ll = cis[, 1], ci_ul = cis[, 2]) %>%
-      mutate(width = ci_ul - ci_ll)
+      mutate(width = ci_ul - ci_ll,
+             sq_width = width ^ 2)
   )
 }
 
 saveRDS(output, paste0(args$output_dir, "/", args$bnab, "_", args$outcome, ".rds"))
-
-print("Analysis complete.")

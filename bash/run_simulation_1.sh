@@ -23,6 +23,7 @@ chmod u+x run_sim1.sh
 njobs=`expr $3 / $4 \* 3`
 arry="1-$njobs"
 
+# modify the following line to run on your cluster environment
 sbatch -A gilbert_p --time=1-0 --array=$arry -e $io_file \
     -o $io_file ./run_sim1.sh $1 $2 $3 $4 $5
 rm run_sim1.sh

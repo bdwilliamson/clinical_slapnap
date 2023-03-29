@@ -20,6 +20,7 @@ args <- parser$parse_args()
 if (!is.na(Sys.getenv("RSTUDIO", unset = NA))) {
   job_id <- 1
 } else {
+  # modify the following line if you are not running on a Slurm system
   job_id <-as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 }
 
@@ -33,15 +34,15 @@ print(paste0("Running epsilon = ", current_dynamic_args$epsilon, " for bnAb regi
 
 # set up the fixed simulation parameters
 summary_statistics <- readRDS(here::here("R_output", "summary_statistics_simulation_1.rds"))
-these_summary_statistics <- summary_statistics %>% 
+these_summary_statistics <- summary_statistics %>%
   filter(bnab == tolower(args$bnab), outcome == args$outcome)
 
 # set up the parameters list
 if (args$outcome == "ic80") {
-    params_lst <- list(mu = these_summary_statistics$mn_y, 
+    params_lst <- list(mu = these_summary_statistics$mn_y,
                        var_y = these_summary_statistics$var_y)
 } else {
-    params_lst <- list(mu0 = -0.32, sigma0 = 0.2, sigma1 = 0.2, 
+    params_lst <- list(mu0 = -0.32, sigma0 = 0.2, sigma1 = 0.2,
                        p_y = these_summary_statistics$mn_y)
 }
 
@@ -59,7 +60,7 @@ output_lst <- lapply(as.list(1:args$nreps_per_job), function(i) {
         params = params_lst
     )
 })
-output <- tibble::as_tibble(data.table::rbindlist(output_lst)) %>% 
+output <- tibble::as_tibble(data.table::rbindlist(output_lst)) %>%
   mutate(bnab = args$bnab, .before = "mc_id")
 saveRDS(output, file = paste0(args$output_dir, "/output_", args$outcome, "_",
                               tolower(args$bnab), "_", job_id, ".rds"))

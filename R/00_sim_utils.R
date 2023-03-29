@@ -91,38 +91,32 @@ est_theta <- function(dat, preds, lambda, augmented = TRUE) {
     theta_n <- (1 / lambda) * mean(dat$r * (dat$y - preds), na.rm = TRUE) + mean(preds)
     return(theta_n)
 }
-
-# for simulation 1b
-est_var <- function(dat, theta, preds, lambda, augmented = TRUE) {
-    if (!augmented) {
-        y <- dat$y[dat$r == 1]
-        r <- rep(1, length(y))
-        preds <- preds[dat$r == 1]
-    } else {
-        y <- dat$y
-        r <- dat$r
-    }
-    eif <- (r / lambda) * (y - theta) - ((r - lambda) / lambda) * (preds - theta)
-    return(mean(eif ^ 2, na.rm = TRUE))
+estimating_equation <- function(dat, preds, theta, lambda) {
+  term <- ifelse(is.na(dat$y), (-1) * (dat$r - lambda) / lambda * (preds - theta),
+                 dat$r / lambda * (dat$y - theta))
+  sum(term)
 }
 
-sim1b_boot_stat <- function(data, indices, augmented, outcome_type, lambda) {
-    dat <- data[indices, ]
-    if (!augmented) {
-        dat <- subset(dat, r == 1)
-    } 
-    y <- dat$y
-    r <- dat$r
-    w <- dat$w
-    if (grepl("binary", outcome_type)) {
-        fam <- binomial()
-    } else {
-        fam <- gaussian()
-    }
-    g_n <- glm(y ~ w, data = dat, subset = (dat$r == 1), family = fam)
-    preds <- predict(g_n, newdata = dat, type = "response")
-    theta_n <- (1 / lambda) * mean(dat$r * (dat$y - preds), na.rm = TRUE) + mean(preds)
-    return(theta_n)
+# sim1b_boot_stat <- function(data, indices, augmented, outcome_type, lambda) {
+sim1b_boot_stat <- function(data, indices, augmented, outcome_type, g_n) {
+  dat <- data[indices, ]
+  lambda <- sum(dat$r == 1) / nrow(dat)
+  if (!augmented) {
+    dat <- subset(dat, r == 1)
+  } 
+  y <- dat$y
+  y2 <- ifelse(is.na(y), 0, y)
+  r <- dat$r
+  w <- dat$w
+  if (grepl("binary", outcome_type)) {
+    fam <- binomial()
+  } else {
+    fam <- gaussian()
+  }
+  # g_n <- glm(y ~ w, data = dat, subset = (dat$r == 1), family = fam)
+  preds <- predict(g_n, newdata = dat, type = "response")
+  theta_n <- (1 / lambda) * mean(r * (y2 - preds), na.rm = TRUE) + mean(preds)
+  return(theta_n)
 }
 
 # get one set of estimates
@@ -159,115 +153,245 @@ prob_v <- function(v, alpha, gamma, delta) {
 objective_function <- function(par, gamma, delta) {
     abs(sum(unlist(lapply(as.list(0:1), function(v) prob_v(v, alpha = par, gamma = gamma, delta = delta)))) - 1)
 }
+get_pe_1 <- function(pe_overall, pe_0, gamma) {
+  1 - exp( (log(1 - pe_overall) - (1 - gamma) * log(1 - pe_0)) / gamma)
+}
 # generate a dataset
 # @param n the sample size
-# @param J the number of AA positions
-# @param gamma_0 sample proportion of infected subjects in AMP placebo arm with resistant genotype
-# @param gamma_1 sample proportion of infected subjects in AMP VRC01 arm with resistant genotype
-# @param pe_overall the overall prevention efficacy (from AMP)
-# @param lambda the non-genotype-specific event rate
-# @param q the estimated censoring proportion from AMP
+# @param all_positions the positions on Env
+# @param gamma_0 proportions of resistant genotypes at each site in the placebo arm
+# @param gamma_1 proportions of resistant genotypes at each site in the VRC01 arm
+# @param beta the treatment effect (log hazard ratio, in isolation from genotype)
+# @param p0 the mean non-genotype-specific event rate
+# @param q the probability of censoring
 # @param eos end of study time
 # @param positions the truly important positions
 # @return a dataset with outcomes and gp120 AA sites
-gen_data_sim2 <- function(n = 1000, J = 100, gamma_0 = rep(runif(100, 0, 0.5)), 
-                          gamma_1 = rep(runif(100, 0, 0.8)), 
-                          pe_overall = 0.18, lambda = -log(.85)/80,
-                          q = .1, eos = 80, positions = c(1:26)) {
+# gen_data_sim2_v1 <- function(n = 1000, all_positions = 1:100, gamma_0, gamma_1, p0 = 67 / 1535,
+#                           beta = log(1 - 0.18), q = 769 / 4611,
+#                           eos = 80, positions = c(1:26)) {
+#     # generate treatment data
+#     a <- rbinom(n, 1, 0.5)
+#     n1 <- sum(a == 1)
+#     n0 <- sum(a == 0)
+#     # generate censoring
+#     C <- runif(n, min = 0, max = eos / q)
+#     # generate outcome data according to the model
+#     t <- vector("numeric", length = n)
+#     rate_placebo <- (-1) * log(1 - p0) / eos
+#     t[a == 1] <- rexp(n1, rate = rate_placebo * exp(beta))
+#     t[a == 0] <- rexp(n0, rate = rate_placebo)
+#     # determine observed endpoints
+#     y <- as.numeric(t <= eos & t <= C)
+#     n01 <- sum(a == 0 & y == 1)
+#     n11 <- sum(a == 1 & y == 1)
+#     t <- pmin(t, eos)
+#     # generate marks; note that if we don't have an endpoint (and thus a sequence),
+#     # the marks are NA
+#     J <- length(all_positions)
+#     v <- matrix(NA, nrow = n, ncol = J)
+#     for (j in seq_len(J)) {
+#         v[a == 0 & y == 1, j] <- rbinom(n01, 1, gamma_0[j])
+#         v[a == 1 & y == 1, j] <- rbinom(n11, 1, gamma_1[j])
+#     }
+#     colnames(v) <- paste0("X", all_positions)
+#     v_df <- data.frame(v)
+#     # combine
+#     dat <- data.frame(y = y, t = t, a = a, v)
+#     return(dat)
+# }
+gen_data_sim2_simple <- function(n = 1000, lambda_0 = 0.018, 
+                                 alpha = log(1 - .7),
+                                 q = .1, eos = 365 * 2) {
     # generate treatment data
     a <- rbinom(n, 1, 0.5)
-    n1 <- sum(a == 1)
-    n0 <- sum(a == 0)
-    # generate outcome data
-    beta <- log(1 - pe_overall)
-    t <- rexp(n, rate = lambda * exp(beta * a))
-    # generate censoring data
-    cens <- runif(n, min = 0, max = eos / q)
-    # final observation time, observed event variables
-    obstime <- pmin(t, cens, eos)
-    delta <- as.numeric(t <= cens & t <= eos)
-    # generate binary resistance profile
-    r <- matrix(NA, nrow = n, ncol = J)
-    for (j in 1:J) {
-        r[a == 0 & delta == 1, j] <- rbinom(sum(a == 0 & delta == 1), 1, gamma_0[j])
-        if (j %in% positions) {
-            r[a == 1 & delta == 1, j] <- rbinom(sum(a == 1 & delta == 1), 1, gamma_1[j])
-        } else {
-            r[a == 1 & delta == 1, j] <- rbinom(sum(a == 1 & delta == 1), 1, gamma_0[j])    
-        }
-    }
-    r_df <- as.data.frame(r)
+    # generate censoring
+    C <- runif(n, min = 0, max = eos / q)
+    t <- rexp(n, rate = lambda_0 * exp(a * alpha)) * 365 
+    # determine observed endpoints
+    y <- as.numeric(t <= eos & t <= C)
+    obstime <- pmin(t, C, eos)
+    delta <- (obstime == C)
+    dat <- data.frame(y = y, t = obstime, a = a, delta = delta)
+    return(dat)
+}
+# generate a dataset
+# @param n the sample size
+# @param all_positions the positions on Env
+# @param gamma_0 proportions of resistant genotypes at each site in the placebo arm
+# @param pe_max the maximum PE of VRC01 for a sensitive virus
+# @param beta the treatment effect (log hazard ratio, in isolation from genotype)
+# @param alpha a vector of genotype-specific effects (an interaction between treatment and
+#              presence of the sensitive genotype at a given residue)
+# @param lambda_0 the incidence rate (per person-year) in the AMP placebo arm
+# @param q the probability of censoring
+# @param eos the final study date (in days)
+# @param positions the truly important positions
+# @param position the position(s) of interest that actually have sieve effects
+# @return a dataset with outcomes and gp120 AA sites
+gen_data_sim2 <- function(n = 1000, all_positions = 1:100, gamma_0, lambda_0 = 3.04,
+                          pe_max = 0.95, beta = log(1 - 0.18), pe_0 = 0, pe_1 = .89,
+                          q = 769 / 4611, eos = 365 * 2,
+                          positions = c(1:26),
+                          position = 1) {
+    # generate treatment data
+    a <- rbinom(n, 1, 0.5)
+    # generate censoring
+    C <- runif(n, min = 0, max = eos / q)
+    # generate latent cause-specific infection times
+    t0 <- rexp(n, rate = lambda_0 * (1 - gamma_0[position]) * exp(a * log(1 - pe_0))) * 365 # hazard among those with S230 = 0
+    t1 <- rexp(n, rate = lambda_0 * gamma_0[position] * exp(a * log(1 - pe_1))) * 365 # hazard among those with S230 = 1
+    t <- pmin(t0, t1)
+    # generate latent mark variable denoting sensitive vs other at each position
+    S <- t(replicate(n, rbinom(length(all_positions), 1, gamma_0)))
+    S[, position] <- as.numeric(t == t1)
+    # determine observed endpoints
+    y <- as.numeric(t <= eos & t <= C)
+    obstime <- pmin(t, C, eos)
+    delta <- (obstime == C)
+    # generate marks; note that if we don't have an endpoint (and thus a sequence),
+    # the marks are NA
+    J <- length(all_positions)
+    v <- matrix(NA, nrow = n, ncol = J)
+    v[y == 1, ] <- S[y == 1, ]
+    colnames(v) <- paste0("X", all_positions)
+    v_df <- data.frame(v)
     # combine
-    dat <- data.frame(t = t, c = cens, obstime = obstime, delta = delta, a = a, r_df)
+    dat <- data.frame(y = y, t = obstime, a = a, delta = delta, v)
     return(dat)
 }
 
-# run a Lunn and McNeil test for a given AA position
+# compute the number of events at each time point,
+# return the closest time point that yields the desired number of events
+# @param t a vector of survival times
+# @param n_events the number of events we're stopping at
+get_time_point <- function(t = rep(1, 100), C = rep(1, 100), n_events = 88) {
+    all_y <- do.call(cbind, lapply(1:200 * 7, function(x) as.numeric(t <= x & t <= C)))
+    time_point <- which.min(abs(colSums(all_y) - n_events))
+    return(time_point)
+}
+
+# get p-value from Lunn & McNeil test
 # @param dat the dataset
-# @param j the AA position
-one_lm_test <- function(dat, j, estimator = "sievePH") {
-    mark <- dat %>% pull(!!paste0("V", j))
-    if (estimator == "sievePH") {
-        result <- sievePH::sievePH(eventTime = dat$obstime,
-                                   eventInd = dat$delta,
-                                   mark = mark,
-                                   tx = dat$a)
-        summ <- summary(result, markGrid = c(0, 1))
-        pval <- summ$pWald.HRunity.2sided   
+# @param mark the mark value
+lunn_mcneil_pval <- function(dat, mark, package = "sievePH") {
+    if (package == "sievePH") {
+        this_sievePH <- sievePH::sievePH(eventTime = dat$t, eventInd = dat$y,
+                                         mark = mark, tx = dat$a)
+        pval <- summary(this_sievePH, markGrid = 0)$pWald.HRconstant.2sided
     } else {
-        result <- lunnMcneilTest(flrtime = dat$obstime,
-                                 flrstatus = dat$delta,
-                                 flrtype = mark,
-                                 Vx = dat$a)
-        pval <- result$waldtest[3]
+        this_result <- lunnMcneilTest(flrtime = dat$t, flrstatus = dat$y,
+                                      flrtype = mark + 1, Vx = dat$a)
+        pval <- this_result$coefficients[3, 5]
     }
     return(pval)
 }
 
+run_sim2_simple_once <- function(mc_id = 1, n = 1000, lambda_0 = 0.018,
+                                 alpha = log(1 - .7), q = .1, eos = 365 * 2) {
+    dat <- gen_data_sim2_simple(n = n, lambda_0 = lambda_0, alpha = alpha, q = q, eos = eos)
+    surv_fit <- coxph(Surv(time = t, event = y) ~ a, data = dat)
+    ret <- tibble::tibble(mc_id = mc_id, n = n, 
+                          hr_p = summary(surv_fit)$waldtest[3],
+                          n_events = sum(dat$y),
+                          n_0 = sum(dat$y[dat$a == 0]),
+                          n_1 = sum(dat$y[dat$a == 1]))
+}
 # run the procedure once
 # @param n the sample size
-# @param J the number of AA positions
-# @param gamma the vector of gamma values for the important sites
-# @param delta the treatment effect (log hazard ratio, in isolation from genotype)
-# @param lambda the non-genotype-specific event rate
-# @param eos end of study time
+# @param all_positions the unique Env positions
+# @param gammas a tibble with the positions, proportions of resistant genotypes at each site in the placebo arm, and
+#               proportions of resistant genotypes at each site in the VRC01 arm
+# @param beta the treatment effect (log hazard ratio, in isolation from genotype)
+# @param alpha a vector of genotype-specific effects (an interaction between treatment and
+#              presence of the sensitive genotype at a given residue)
+# @param lambda_0 the incidence rate (per person-year) in the AMP placebo arm
+# @param q the probability of censoring
+# @param eos the final study date (in days)
+# @param positions the truly important positions (only used in the sieve analysis if site_scanning = FALSE)
+# @param position the position(s) of interest that actually have sieve effects
 # @param site_scanning should we look at all sites (TRUE) or the sites specified in 'positions' (FALSE)?
-# @param positions a vector of AA positions to look at for sieve analysis
-#          (only used in the sieve analysis if site_scanning = FALSE)
-# @param estimator the code used to estimate sieve effects p-value
+# @param pe_0 prevention efficacy when S230 = 0
+# @param pe_1 prevention efficacy when S230 = 1
+# @param minvar_screen how many observed marks do we need for stability
+# @param debug return a simple summary, for debugging
+# @param package which code to use for testing?
 # @return whether or not each important site was truly detected
-run_sim2_once <- function(mc_id = 1, n = 1000, J = 100, gamma_0 = rep(runif(100, 0, 0.5)), 
-                          gamma_1 = rep(runif(100, 0, 0.8)), 
-                          pe_overall = 0.18, lambda = -log(.85)/80,
-                          q = .1, eos = 80, positions = c(1:26), 
-                          site_scanning = TRUE,
-                          estimator = "sievePH") {
+run_sim2_once <- function(mc_id = 1, n = 1000, all_positions = 1:100, gammas,
+                          lambda_0 = 3.04, beta = log(1 - 0.18),
+                          q = 769 / 4611, eos = 365 * 2, site_scanning = TRUE, 
+                          pe_0 = 0, pe_1 = .89,
+                          positions = c(1:26), position = 1,
+                          minvar_screen = 10, debug = FALSE, package = "none") {
     # generate data
-    dat <- gen_data_sim2(n = n, J = J, gamma_0 = gamma_0, gamma_1 = gamma_1,
-                         pe_overall = pe_overall, lambda = lambda, q = q,
-                         eos = eos, positions = positions)
+    dat <- gen_data_sim2(n = n, all_positions = all_positions, lambda_0 = lambda_0,
+                         gamma_0 = gammas$prop_placebo,
+                         beta = beta, pe_0 = pe_0, pe_1 = pe_1, q = q,
+                         eos = eos, positions = positions, position = position)
+    cc_dat <- dat[complete.cases(dat), ]
+    y_summ <- data.frame(mc_id = mc_id, n = sum(dat$y), n00 = sum(cc_dat$y[cc_dat$a == 0 & cc_dat$X230 == 0]),
+                         n01 = sum(cc_dat$y[cc_dat$a == 0 & cc_dat$X230 == 1]),
+                         n10 = sum(cc_dat$y[cc_dat$a == 1 & cc_dat$X230 == 0]),
+                         n11 = sum(cc_dat$y[cc_dat$a == 1 & cc_dat$X230 == 1]))
+    if (debug) {
+        # get number of events
+        return(y_summ)
+    }
+    # survival analysis for primary analysis
+    surv_fit <- survival::coxph(Surv(time = t, event = y) ~ a, data = dat)
+    overall_p <- summary(surv_fit)$waldtest[3]
+    # apply minimum variability filter
+    n_cases_with_each_mark <- apply(dat[dat$y == 1, 4:ncol(dat)], 2, function(x) sum(dat$y[x == 1], na.rm = TRUE))
+    dat2 <- dat[, c(1:3, which(n_cases_with_each_mark >= minvar_screen) + 3)]
+    analysis_positions <- names(dat2)[4:ncol(dat2)]
+    minvar_positions <- positions[positions %in% (which(n_cases_with_each_mark >= minvar_screen) + 3)]
     # do sieve analysis
     if (site_scanning) {
         # run at each AA position
-        all_pvals <- vector("numeric", length = J)
-        for (j in seq_len(J)) {
-            all_pvals[j] <- one_lm_test(dat = dat, j = j, estimator = estimator)
+        all_pvals <- vector("numeric", length = length(analysis_positions))
+        for (j in seq_len(length(analysis_positions))) {
+            this_mark <- dat2 %>% pull(!!analysis_positions[j])
+            this_mark[dat2$y == 0] <- NA
+            if (sum(this_mark[!is.na(this_mark)] == 0) <= minvar_screen |
+                sum(this_mark[!is.na(this_mark)] == 1) <= minvar_screen) {
+                all_pvals[j] <- 1
+            } else {
+                all_pvals[j] <- lunn_mcneil_pval(dat = dat2, mark = this_mark, package = package)
+            }
         }
     } else {
         # run at only the prespecified positions
-        all_pvals <- vector("numeric", length = length(positions))
-        for (j in seq_len(length(positions))) {
-            all_pvals[j] <- one_lm_test(dat = dat, j = positions[j], estimator = estimator)
+        all_pvals <- vector("numeric", length = length(minvar_positions))
+        for (j in seq_len(length(minvar_positions))) {
+            this_mark <- dat2 %>% pull(!!paste0("X", minvar_positions[j]))
+            this_mark[dat2$y == 0] <- NA
+            if (sum(this_mark[!is.na(this_mark)] == 0) <= minvar_screen |
+                sum(this_mark[!is.na(this_mark)] == 1) <= minvar_screen) {
+                all_pvals[j] <- 1
+            } else {
+                all_pvals[j] <- lunn_mcneil_pval(dat = dat2, mark = this_mark, package = package)
+            }
         }
     }
-    adj_p <- p.adjust(all_pvals, method = "holm")
+    p_order <- order(all_pvals, decreasing = FALSE)
+    ordered_p <- all_pvals[p_order]
+    adj_p_init <- p.adjust(ordered_p, method = "holm")
+    adj_p <- adj_p_init[order(p_order)]
     if (site_scanning) {
-        ret_p <- adj_p[positions]
+        # ret_p <- adj_p[positions]
+        ret_p <- adj_p[analysis_positions == paste0("X", 230)]
+        unadjusted_p <- all_pvals[analysis_positions == paste0("X", 230)]
     } else {
-        ret_p <- adj_p
+        # ret_p <- adj_p
+        ret_p <- adj_p[positions == 230]
+        unadjusted_p = all_pvals[positions == 230]
     }
     ret <- tibble::tibble(mc_id = mc_id, n = n, analysis = ifelse(site_scanning, "Site-scanning", "Priority"),
-                          estimator = estimator, position = positions, p_val = ret_p, 
-                          reject = ret_p < 0.05)
+                          pe_0 = pe_0,
+                          position = 230, p_val = ret_p, reject = ret_p < 0.05, 
+                          unadjusted_p_val = unadjusted_p,
+                          hr_p = overall_p,
+                          n_events = y_summ$n, n00 = y_summ$n00, n01 = y_summ$n01,
+                          n10 = y_summ$n10, n11 = y_summ$n11)
     return(ret)
 }
