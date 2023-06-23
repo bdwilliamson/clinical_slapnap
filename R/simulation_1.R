@@ -12,6 +12,7 @@ source(here("R", "00_sim_utils.R"))
 parser <- ArgumentParser()
 parser$add_argument("--bnab", default = "VRC01", help = "the bnAb of interest")
 parser$add_argument("--outcome", default = "ic80", help = "the outcome of interest")
+parser$add_argument("--simplify", default = 1, type = "double", help = "should we use the same mean for Y and W?")
 parser$add_argument("--nreps-total", default = 1000, type = "double", help = "the total number of replicates")
 parser$add_argument("--nreps-per-job", default = 1000, type = "double", help = "the total number of replicates per job")
 parser$add_argument("--output-dir", default = here::here("R_output", "simulation_1"), help = "the output directory")
@@ -39,8 +40,10 @@ these_summary_statistics <- summary_statistics %>%
 
 # set up the parameters list
 if (args$outcome == "ic80") {
-    params_lst <- list(mu = these_summary_statistics$mn_y,
-                       var_y = these_summary_statistics$var_y)
+    params_lst <- list(mu1 = these_summary_statistics$mn_y,
+                       var1 = these_summary_statistics$var_y,
+                       mu2 = switch(as.numeric(args$simplify) + 1, these_summary_statistics$mn_w, these_summary_statistics$mn_y),
+                       var2 = switch(as.numeric(args$simplify) + 1, these_summary_statistics$var_w, these_summary_statistics$var_y))
 } else {
     params_lst <- list(mu0 = -0.32, sigma0 = 0.2, sigma1 = 0.2,
                        p_y = these_summary_statistics$mn_y)
@@ -61,7 +64,7 @@ output_lst <- lapply(as.list(1:args$nreps_per_job), function(i) {
     )
 })
 output <- tibble::as_tibble(data.table::rbindlist(output_lst)) %>%
-  mutate(bnab = args$bnab, .before = "mc_id")
+  mutate(bnab = args$bnab, simplified = args$simplify, .before = "mc_id")
 saveRDS(output, file = paste0(args$output_dir, "/output_", args$outcome, "_",
                               tolower(args$bnab), "_", job_id, ".rds"))
 print("Analysis complete!")

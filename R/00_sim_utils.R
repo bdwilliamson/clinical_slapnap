@@ -1,5 +1,34 @@
 # utility functions for simulation 1: assess relative efficiency of using extra Env sequences
 
+# for simulation 0 -------------------------------------------------------------
+# get a datset of size n
+# @param data the dataset (VRC01 catnap data)
+# @param n the sample size
+# @return a dataset of size n sampled from the VRC01 catnap data
+subsample_dataset <- function(data, n = 10) {
+  samp <- sample(1:nrow(data), size = n, replace = FALSE)
+  return(data[samp, ])
+}
+
+# get CV-MSE of a lasso predicting the outcome
+# @param data the dataset
+# @param K the number of folds
+# @return the CV-MSE
+get_lasso_cvmse <- function(data, K = 5) {
+  mses <- vector("numeric", length = K)
+  y <- data$ic80
+  x <- as.matrix(data %>% select(-ic80))
+  cc_y <- y[complete.cases(y)]
+  cc_x <- x[complete.cases(y), ]
+  folds <- sample(rep(1:K, length = nrow(cc_x)))
+  for (k in 1:K) {
+    this_fit <- cv.glmnet(x = cc_x[folds != k, ], y = cc_y[folds != k], nfolds = 5)
+    these_preds <- predict(this_fit, newx = cc_x[folds == k, ], s = this_fit$lambda.min)
+    mses[k] <- mean((cc_y[folds == k] - these_preds) ^ 2)
+  }
+  return(mean(mses))
+}
+
 # for simulation 1 -------------------------------------------------------------
 
 # compute the covariance based on R-squared
@@ -15,19 +44,22 @@ get_sigma <- function(r2 = 0.345, var_y = 1, var_x = 1) {
 # @param n the sample size
 # @param epsilon the fraction to augment with auxiliary Env sequences
 # @param r2 the r-squared
-# @param var_y the variance of y (log10 IC-80)
-# @param mu the mean of y
+# @param var1 the variance of y (log10 IC-80)
+# @param var2 the variance of the PAR scores
+# @param mu1 the mean of y
+# @param mu2 the mean of the PAR scores
 # @return a data.frame (W, R, RY)
-gen_data_continuous <- function(n = 100, epsilon = 0.2, r2 = 0.345, var_y = 1, mu = 0) {
+gen_data_continuous <- function(n = 100, epsilon = 0.2, r2 = 0.345, var1 = 1, mu1 = 0,
+                                var2 = 1, mu2 = 0) {
     # generate w, y for everyone
-    cov <- get_sigma(r2 = r2, var_y = var_y, var_x = var_y)
-    if (cov > var_y) {
-        cov <- var_y - 0.2
+    cov <- get_sigma(r2 = r2, var_y = var1, var_x = var2)
+    if (cov > var1) {
+        cov <- var1 - 0.2
     }
-    Sigma <- matrix(c(var_y, cov, cov, var_y), nrow = 2, byrow = TRUE)
+    Sigma <- matrix(c(var1, cov, cov, var2), nrow = 2, byrow = TRUE)
     # note that this is (Y, W)
     n2 <- n * (1 + epsilon)
-    dat <- MASS::mvrnorm(n = n2, mu = rep(mu, 2), Sigma = Sigma)
+    dat <- MASS::mvrnorm(n = n2, mu = c(mu1, mu2), Sigma = Sigma)
     w <- dat[, 2]
     y <- dat[, 1]
     # generate R
@@ -120,14 +152,21 @@ sim1b_boot_stat <- function(data, indices, augmented, outcome_type, g_n) {
 }
 
 # get one set of estimates
-get_ests <- function(mc_id = 1, n = 100, epsilon = 0.2, point_est = 0.2, datatype = "binary", params = list( mu0 = -0.32, sigma0 = 0.005, sigma1 = 0.005, p_y = 0.5), augmented = TRUE) {
+get_ests <- function(mc_id = 1, n = 100, epsilon = 0.2, point_est = 0.2, 
+                     datatype = "binary", params = list( mu0 = -0.32, sigma0 = 0.005, sigma1 = 0.005, p_y = 0.5), 
+                     augmented = TRUE) {
     # generate data; a data.frame (W, R, RY)
     # estimate E(Y | W)
     if (datatype == "binary") {
         dat <- gen_data_binary(n = n, epsilon = epsilon, auc = point_est, mu0 = params$mu0, sigma0 = params$sigma0, sigma1 = params$sigma1, p_y = params$p_y)
+        dat2 <- gen_data_binary(n = 1e6, epsilon = epsilon, auc = point_est, mu0 = params$mu0, sigma0 = params$sigma0, sigma1 = params$sigma1, p_y = params$p_y)
     } else {
-        dat <- gen_data_continuous(n = n, epsilon = epsilon, r2 = point_est, var_y = params$var_y, mu = params$mu)
+        dat <- gen_data_continuous(n = n, epsilon = epsilon, r2 = point_est, var1 = params$var1, mu1 = params$mu1,
+                                   var2 = params$var2, mu2 = params$mu2)
+        dat2 <- gen_data_continuous(n = 1e6, epsilon = epsilon, r2 = point_est, var1 = params$var1, mu1 = params$mu1,
+                                   var2 = params$var2, mu2 = params$mu2)
     }
+    true_mn_y <- mean(dat2$ystar)
     ystar <- dat$ystar
     dat <- dat %>% select(-ystar)
     # estimate lambda
@@ -137,11 +176,11 @@ get_ests <- function(mc_id = 1, n = 100, epsilon = 0.2, point_est = 0.2, datatyp
     # estimate theta
     theta <- est_theta(dat = dat, preds = g_n, lambda = lambda_n, augmented = FALSE)
     theta_aug <- est_theta(dat = dat, preds = g_n, lambda = lambda_n, augmented = TRUE)
-    true_mn_y <- mean(ystar)
+    theta_oracle <- mean(ystar)
     # make a little tibble
     ret <- tibble::tibble(mc_id = mc_id, n = n, epsilon = epsilon,
-                          point_est = point_est, augmented = c(FALSE, TRUE),
-                          datatype = datatype, est = c(theta, theta_aug),
+                          point_est = point_est, estimator = c("non-augmented", "augmented", "oracle"),
+                          datatype = datatype, est = c(theta, theta_aug, theta_oracle),
                           truth = true_mn_y)
     return(ret)
 }
