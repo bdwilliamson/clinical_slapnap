@@ -57,6 +57,11 @@ gen_data_continuous <- function(n = 100, epsilon = 0.2, r2 = 0.345, var1 = 1, mu
         cov <- var1 - 0.2
     }
     Sigma <- matrix(c(var1, cov, cov, var2), nrow = 2, byrow = TRUE)
+    if (det(Sigma) < 0) {
+      Sigma2 <- Sigma
+      Sigma2[2, 1] <- Sigma2[1, 2] <- min(var1, var2) - 0.1
+      Sigma <- Sigma2
+    }
     # note that this is (Y, W)
     n2 <- n * (1 + epsilon)
     dat <- MASS::mvrnorm(n = n2, mu = c(mu1, mu2), Sigma = Sigma)

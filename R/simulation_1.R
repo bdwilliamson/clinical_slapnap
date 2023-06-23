@@ -66,5 +66,5 @@ output_lst <- lapply(as.list(1:args$nreps_per_job), function(i) {
 output <- tibble::as_tibble(data.table::rbindlist(output_lst)) %>%
   mutate(bnab = args$bnab, simplified = args$simplify, .before = "mc_id")
 saveRDS(output, file = paste0(args$output_dir, "/output_", args$outcome, "_",
-                              tolower(args$bnab), "_", job_id, ".rds"))
+                              tolower(args$bnab), "_", args$simplify, "_", job_id, ".rds"))
 print("Analysis complete!")

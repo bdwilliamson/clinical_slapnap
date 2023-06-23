@@ -9,6 +9,7 @@
 # 04: number of replicates per job, e.g., 1000
 # 05: output directory, e.g., "/fh/fast/gilbert_p/bwillia2/clinical_slapnap/simulation_1/"
 # 06: the i/o file
+# 07: simplify the dgm or not?
 io_prefix="/fh/scratch/delete90/gilbert_p/bwillia2/${6}"
 mkdir -p $io_prefix
 io_file="$io_prefix/slurm-%A_%a.out"
@@ -17,7 +18,7 @@ io_file="$io_prefix/slurm-%A_%a.out"
 echo -e \
     '#!/bin/bash\n Rscript simulation_1.R ' \
     '--bnab $1 --outcome $2 --nreps-total $3 ' \
-    '--nreps-per-job $4 --output-dir $5' > run_sim1.sh
+    '--nreps-per-job $4 --output-dir $5 --simplify $6' > run_sim1.sh
 chmod u+x run_sim1.sh
 
 njobs=`expr $3 / $4 \* 3`
@@ -25,5 +26,5 @@ arry="1-$njobs"
 
 # modify the following line to run on your cluster environment
 sbatch -A gilbert_p --time=1-0 --array=$arry -e $io_file \
-    -o $io_file ./run_sim1.sh $1 $2 $3 $4 $5
+    -o $io_file ./run_sim1.sh $1 $2 $3 $4 $5 $7
 rm run_sim1.sh
